@@ -1,4 +1,7 @@
 
-export(test_weibullpp)
+export(test_weibullpp,
+       weibull_2p_like_1,
+       find_mle
+)
 
 
