@@ -22,4 +22,18 @@ plot data, type can be failure or reliability
 plot(y, type = 'failure')
 ```
 
+## Recurrent Event Analysis
+At this time, only really set up for 1 unique ID.
+General Renewal Process (GRP) is the assumed parameteric model with power law model.
+
+Input: times, ID, and status.
+Optional Input: time units.
+Status and time units input should be similar to Life Data Analysis.
+```R
+x = recurrentdata(time, id, status, units)
+plot(x)
+y = mle_recurrent(x, type = 1)
+```
+Plotting data will result in a step plot of Number of occurences vs time.
+`mle_recurrent` will default to type I but also accepts type II model.
 
