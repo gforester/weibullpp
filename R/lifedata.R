@@ -38,15 +38,18 @@ fit_data.lifedata <- function(x, dist = 'weibull'){
 
 
 
-plot.fitted_life_data <- function(x, type = 'failure'){
+plot.fitted_life_data <- function(x, type = 'failure', theme = 'base_r'){
   if(type == 'failure'){
-    plot_cdfs(x, lower.tail = T)
+    plot_cdfs(x, lower.tail = T, theme)
   }
   if(type == 'reliability'){
-    plot_cdfs(x, lower.tail = F)
+    plot_cdfs(x, lower.tail = F, theme)
+  }
+  if(type == 'pdf'){
+    plot_pdf(x, theme)
   }
 }
-plot_cdfs <- function(x, lower.tail){
+plot_cdfs <- function(x, lower.tail, theme){
   #get Kaplan-Meier
   times <- Surv(x$data[[1]],x$data[[2]])
   fit <- survfit(times ~ 1)
@@ -69,4 +72,38 @@ plot_cdfs <- function(x, lower.tail){
     }
   }
   plot(xs, ys, type = 'l')
+}
+plot_pdf <- function(x, theme){
+  xmax <- 1.02 * max(x$data[[1]])
+  xs <- seq(from=0, to=xmax, length.out = 5E2)
+  if(x$dist == 'exponential'){
+    ys <- dexp(xs, shape = x$fit$shape, scale = x$fit$scale)
+  }
+  if(x$dist == 'weibull'){
+    ys <- dweibull(xs, shape = x$fit$shape, scale = x$fit$scale)
+  }
+  
+  if(theme == 'base_r'){
+    plot(xs, ys, type = 'l')  
+  }
+  if(theme == 'ggplot'){
+    plot(xs, ys, type = 'l') 
+  }
+  if(theme == 'weibull++'){
+    par(las = 1, xaxs = 'i', yaxs = 'i', tcl = 0, mar = c(2.1, 2.1, 2.1, 4.1), cex.axis = 0.5, mgp = c(1,0,0))
+    xmarks <- pretty(xs)
+    xminis <- seq(from = xmarks[1], to = xmarks[length(xmarks)], by = diff(pretty(xmarks[1:2]))[1])
+    ymarks <- pretty(ys)
+    yminis <- seq(from = ymarks[1], to = ymarks[length(ymarks)], by = diff(pretty(ymarks[1:2]))[1])
+    plot(xs, ys, type = 'l', main = 'Probability Density Function', xlab = "Time", ylab = "f(t)",
+         xlim = c(min(xmarks),max(xmarks)), ylim = c(min(ymarks),max(ymarks)),
+         col = 'blue') 
+    abline(v = xminis, col = 'green',lwd= 0.5)
+    abline(h = yminis, col = 'green',lwd= 0.5)
+    abline(v = xmarks, col = 'red', lwd = 0.5)
+    abline(h = ymarks, col = 'red', lwd = 0.5)
+    lines(xs, ys, col='blue')
+    par(las = 0, xaxs = 'r', yaxs = 'r', tcl = -0.5, mar = c(5.1, 4.1, 4.1, 2.1), cex.axis = 1, mgp = c(3,1,0))
+  }
+  
 }
