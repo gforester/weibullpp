@@ -107,3 +107,12 @@ plot_pdf <- function(x, theme){
   }
   
 }
+
+hist.fitted_life_data <- function(x, type = 'failure', theme = 'base_r'){
+  times <- x$data$time
+}
+hist.lifedata <- function(x, type = 'failure', theme = 'base_r'){
+  times <- x$time
+}
+
+

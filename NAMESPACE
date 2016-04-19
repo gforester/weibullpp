@@ -2,7 +2,7 @@
 export(
   lifedata, print.lifedata, 
   fit_data, fit_data.lifedata,
-  plot.fitted_life_data,
+  plot.fitted_life_data, hist.fitted_life_data, hist.lifedata,
   test_weibullpp,
        weibull_2p_like_1,
        find_mle
