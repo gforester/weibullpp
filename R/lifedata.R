@@ -50,11 +50,6 @@ plot.fitted_life_data <- function(x, type = 'failure', theme = 'base_r'){
   }
 }
 plot_cdfs <- function(x, lower.tail, theme){
-  #get Kaplan-Meier
-  times <- Surv(x$data[[1]],x$data[[2]])
-  fit <- survfit(times ~ 1)
-  #finish later with Modified Kaplan Meier
-  
   xmax <- 1.02 * max(x$data[[1]])
   xs <- seq(from=0, to=xmax, length.out = 5E2)
   if(x$dist == 'exponential'){
