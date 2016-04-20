@@ -138,4 +138,54 @@ hist_lifedata <- function(x, status, type, theme){
   }
 }
 
+calculate <- function(x, ...) UseMethod('calculate')
+calculate.fitted_life_data <- function(x, value, input){
+  if(!(value %in% c('reliability', 'failure', 'mean life', 'failure rate'))){
+    stop(paste('value',value,'not recognized'))
+    to_return <- NULL
+  }else{
+    #probability of reliability and failure -------------------
+    if(value %in% c('reliability', 'failure')){
+      if(value == 'reliability'){
+        use_lower_tail = F
+      }else{
+        use_lower_tail = T
+      } 
+      
+      if(x$dist == 'exponential'){
+        to_return <- pexp(input, 1/x$fit$scale, lower.tail = use_lower_tail)
+      }
+      if(x$dist == 'weibull'){
+        to_return <- pweibull(input, x$fit$shape, x$fit$scale, lower.tail = use_lower_tail)
+      }
+    }
+    #mean life ---------------
+    if(value == 'mean life'){
+      if(x$dist == 'exponential'){
+        to_return <- x$fit$scale
+      }
+      if(x$dist == 'weibull'){
+        to_return <- x$fit$scale * gamma(1+(1/x$fit$shape))
+      }  
+    }
+    #failure rate ------------
+    if(value == 'failure rate'){
+      if(x$dist == 'exponential'){
+        to_return <- 1/x$fit$scale 
+      }
+      if(x$dist == 'weibull'){
+        to_return <- x$fit$shape * (input^(x$fit$shape-1)) * ((1/x$fit$scale)^x$fit$shape)
+      }       
+    }
+
+  }
+  
+  return(to_return)
+}
+
+
+
+
+
+
 
