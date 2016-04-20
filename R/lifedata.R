@@ -33,7 +33,10 @@ fit_data.lifedata <- function(x, dist = 'weibull'){
   return(to_return)
 }
 
-plot.fitted_life_data <- function(x, type = 'failure', theme = 'base_r'){
+plot.fitted_life_data <- function(x, type = 'probability', theme = 'base_r'){
+  if(type == 'probability'){
+    plot_weibull(x, theme)
+  }
   if(type == 'failure'){
     plot_cdfs(x, lower.tail = T, theme)
   }
@@ -110,6 +113,74 @@ plot_hazard <- function(x, theme){
   }
   if(theme == 'weibull++'){
     weibull_theme_plot(xs, ys, 'Failure Rate vs. Time', 'Time', 'Failure Rate')
+  }
+}
+plot_weibull <- function(x, theme){
+  #only need 2 points for straight line
+  xmax <- 10^(ceiling(log10(max(x$data[[1]]))))
+  xmin <- 10^(floor(log10(min(x$data[[1]]))))
+  xs <- c(xmin,xmax)
+  if(x$dist == 'exponential'){
+    ys <- pexp(xs, rate = 1/x$fit$scale)  
+  }
+  if(x$dist == 'weibull'){
+    ys <- pweibull(xs, shape = x$fit$shape, scale = x$fit$scale)  
+  }
+  
+  #y tick locations
+  ymin <- (floor(log10(ys[1])))
+  ymax <- (ceiling(log10(ys[2])))
+  if(ymax == 0) ymax = -1
+  y_lbs <- sort(c(10^(ymin:ymax), 1-(10^(ymin:ymax))))
+  y_ats <- log10(-log(1-y_lbs))
+  y_lbs <- y_lbs[!is.infinite(y_ats)]
+  y_ats <- y_ats[!is.infinite(y_ats)]
+  y_mini_lbs <- 10^unlist(lapply(X = y_lbs[1:(length(y_lbs)/2)], 
+                              FUN = function(y) log10(y)+log10(2:9)))
+  at_end <- F
+  for(i in ((length(y_lbs)/2)+1):length(y_lbs)){
+    if(i == length(y_lbs)){
+      y_lbs[i+1] <- as.numeric(paste0(y_lbs[i],'9'))
+      at_end <- T
+    }
+    to_add <- seq(from = y_lbs[i], to = y_lbs[i+1], by = diff(c(y_lbs[i],y_lbs[i+1]))/9)
+    to_add <- to_add[-c(1,length(to_add))]
+    y_mini_lbs <- c(y_mini_lbs,to_add)
+    if(at_end){
+      y_lbs <- y_lbs[-length(y_lbs)]
+    }
+  }
+  y_mini_ats <- log10(-log(1-y_mini_lbs))
+  
+  #linearize data 
+  xs <- log10(xs)
+  ys <- log10(-log(1-ys))
+  x_ats <- xs[1]:xs[2]
+  x_lbs <- 10^x_ats
+  x_mini_ats <- unlist(lapply(X = x_ats, FUN = function(y) y+log10(2:9)))
+  x_mini_lbs <- 10^x_mini_ats
+  
+  if(theme == 'base_r'){
+    plot(xs, ys, type = 'l', xaxt = 'n', yaxt = 'n', ann = F)
+    axis(side = 1, at = x_ats, labels = x_lbs)
+    axis(side = 2, at = y_ats, labels = y_lbs)
+  }
+  if(theme == 'weibull++'){
+    par(las = 1, xaxs = 'i', yaxs = 'i', tcl = 0, mar = c(1.6, 2.2, 1.6, 2.1), cex.axis = 0.5, 
+        mgp = c(0.75,0,0), col.axis = 'blue', col.lab = 'red', col.main = 'red', cex.main = 1)
+    plot(xs, ys, type = 'l', xaxt = 'n', yaxt = 'n', ann = F, col='blue')
+    axis(side = 1, at = x_ats, labels = x_lbs, lwd = 0, line = -0.4)
+    axis(side = 2, at = y_ats, labels = y_lbs, lwd = 0, line = 0.1)
+    title(ylab='Unreliability', line = 1.25)
+    title(xlab='Time', line = 0.5)
+    title(main='Probability - Weibull', line =0.5)
+    abline(v = x_mini_ats, col = 'green',lwd= 0.5)
+    abline(h = y_mini_ats, col = 'green',lwd= 0.5)
+    abline(v = x_ats, col = 'red', lwd = 0.5)
+    abline(h = y_ats, col = 'red', lwd = 0.5)
+    lines(xs, ys, col='blue')
+    par(las = 0, xaxs = 'r', yaxs = 'r', tcl = -0.5, mar = c(5.1, 4.1, 4.1, 2.1), cex.axis = 1, 
+        mgp = c(3,1,0), col.axis = 'black', col.lab = 'black', col.main='black', cex.main = 1.2)
   }
 }
 
