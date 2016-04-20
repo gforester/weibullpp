@@ -61,7 +61,20 @@ plot_cdfs <- function(x, lower.tail, theme){
       ys <- pweibull(xs, shape = x$fit$shape, scale = x$fit$scale, lower.tail = F) 
     }
   }
-  plot(xs, ys, type = 'l')
+  
+  if(theme == 'base_r'){
+    plot(xs, ys, type = 'l')
+  }
+  if(theme == 'weibull++'){
+    if(lower.tail){
+      cdf_title = 'Unreliability vs. Time'
+      cdf_y_lab = 'Unreliability'
+    }else{
+      cdf_title = 'Reliability vs. Time'
+      cdf_y_lab = 'Reliability'
+    }
+    weibull_theme_plot(xs, ys, cdf_title, 'Time', cdf_y_lab)
+  }
 }
 plot_pdf <- function(x, theme){
   xmax <- 1.02 * max(x$data[[1]])
@@ -81,7 +94,6 @@ plot_pdf <- function(x, theme){
   }
   if(theme == 'weibull++'){
     weibull_theme_plot(xs, ys, 'Probability Density Function', 'Time', 'f(t)')
-    
   }
   
 }
