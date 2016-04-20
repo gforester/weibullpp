@@ -110,9 +110,32 @@ plot_pdf <- function(x, theme){
 
 hist.fitted_life_data <- function(x, type = 'failure', theme = 'base_r'){
   times <- x$data$time
+  status <- x$data$status
+  hist_lifedata(times, status, type, theme) 
 }
 hist.lifedata <- function(x, type = 'failure', theme = 'base_r'){
   times <- x$time
+  status <- x$status
+  hist_lifedata(times, status, type, theme)
+}
+hist_lifedata <- function(x, status, type, theme){
+  if(!(type %in% c('failure','suspension'))){
+    stop('type must be either failure or suspension')
+  }else{
+    if(type == 'failure'){
+      times <- x[status == 1]
+    }else{
+      times <- x[status == 0]
+    }
+  }
+  
+  if(!(theme %in% c('base_r'))){
+    warning('theme unknown. defaulting to base_r')
+    theme <- 'base_r'
+  }
+  if(theme == 'base_r'){
+    hist(times)  
+  }
 }
 
 
