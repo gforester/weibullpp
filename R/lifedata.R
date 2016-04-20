@@ -43,6 +43,9 @@ plot.fitted_life_data <- function(x, type = 'failure', theme = 'base_r'){
   if(type == 'pdf'){
     plot_pdf(x, theme)
   }
+  if(type == 'failure rate'){
+    plot_hazard(x, theme)
+  }
 }
 plot_cdfs <- function(x, lower.tail, theme){
   xmax <- 1.02 * max(x$data[[1]])
@@ -96,6 +99,18 @@ plot_pdf <- function(x, theme){
     weibull_theme_plot(xs, ys, 'Probability Density Function', 'Time', 'f(t)')
   }
   
+}
+plot_hazard <- function(x, theme){
+  xmax <- 1.02 * max(x$data[[1]])
+  xs <- seq(from=0, to=xmax, length.out = 5E2)
+  ys <- sapply(X=xs, FUN = function(z){calculate(x,'failure rate',z)})
+  
+  if(theme == 'base_r'){
+    plot(xs, ys, type = 'l')  
+  }
+  if(theme == 'weibull++'){
+    weibull_theme_plot(xs, ys, 'Failure Rate vs. Time', 'Time', 'Failure Rate')
+  }
 }
 
 weibull_theme_plot <- function(x,y,lab1, lab2, lab3){
