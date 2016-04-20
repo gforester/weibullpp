@@ -1,7 +1,4 @@
 
-
-
-
 lifedata <- function(time, status, units = NULL){
   #check that time is positive
   if(any(time < 0)) stop('time values must be non-negative')
@@ -35,8 +32,6 @@ fit_data.lifedata <- function(x, dist = 'weibull'){
   
   return(to_return)
 }
-
-
 
 plot.fitted_life_data <- function(x, type = 'failure', theme = 'base_r'){
   if(type == 'failure'){
@@ -85,22 +80,34 @@ plot_pdf <- function(x, theme){
     plot(xs, ys, type = 'l') 
   }
   if(theme == 'weibull++'){
-    par(las = 1, xaxs = 'i', yaxs = 'i', tcl = 0, mar = c(2.1, 2.1, 2.1, 4.1), cex.axis = 0.5, mgp = c(1,0,0))
-    xmarks <- pretty(xs)
-    xminis <- seq(from = xmarks[1], to = xmarks[length(xmarks)], by = diff(pretty(xmarks[1:2]))[1])
-    ymarks <- pretty(ys)
-    yminis <- seq(from = ymarks[1], to = ymarks[length(ymarks)], by = diff(pretty(ymarks[1:2]))[1])
-    plot(xs, ys, type = 'l', main = 'Probability Density Function', xlab = "Time", ylab = "f(t)",
-         xlim = c(min(xmarks),max(xmarks)), ylim = c(min(ymarks),max(ymarks)),
-         col = 'blue') 
-    abline(v = xminis, col = 'green',lwd= 0.5)
-    abline(h = yminis, col = 'green',lwd= 0.5)
-    abline(v = xmarks, col = 'red', lwd = 0.5)
-    abline(h = ymarks, col = 'red', lwd = 0.5)
-    lines(xs, ys, col='blue')
-    par(las = 0, xaxs = 'r', yaxs = 'r', tcl = -0.5, mar = c(5.1, 4.1, 4.1, 2.1), cex.axis = 1, mgp = c(3,1,0))
+    weibull_theme_plot(xs, ys, 'Probability Density Function', 'Time', 'f(t)')
+    
   }
   
+}
+
+weibull_theme_plot <- function(x,y,lab1, lab2, lab3){
+  par(las = 1, xaxs = 'i', yaxs = 'i', tcl = 0, mar = c(1.6, 2.2, 1.6, 2.1), cex.axis = 0.5, 
+      mgp = c(0.75,0,0), col.axis = 'blue', col.lab = 'red', col.main = 'red', cex.main = 1)
+  xmarks <- pretty(x)
+  xminis <- seq(from = xmarks[1], to = xmarks[length(xmarks)], by = diff(pretty(xmarks[1:2]))[1])
+  ymarks <- pretty(y)
+  yminis <- seq(from = ymarks[1], to = ymarks[length(ymarks)], by = diff(pretty(ymarks[1:2]))[1])
+  plot(x, y, type = 'l', main = '', xlab = "", ylab = "",
+       xlim = c(min(xmarks),max(xmarks)), ylim = c(min(ymarks),max(ymarks)),yaxt = 'n', xaxt = 'n',
+       col = 'blue') 
+  axis(side = 2, at = ymarks, tick=F, line = 0.1)
+  axis(side = 1, at = xmarks, tick=F, line = -0.4)
+  title(ylab=lab3, line = 1.25)
+  title(xlab=lab2, line = 0.5)
+  title(main=lab1, line =0.5)
+  abline(v = xminis, col = 'green',lwd= 0.5)
+  abline(h = yminis, col = 'green',lwd= 0.5)
+  abline(v = xmarks, col = 'red', lwd = 0.5)
+  abline(h = ymarks, col = 'red', lwd = 0.5)
+  lines(x, y, col='blue')
+  par(las = 0, xaxs = 'r', yaxs = 'r', tcl = -0.5, mar = c(5.1, 4.1, 4.1, 2.1), cex.axis = 1, 
+      mgp = c(3,1,0), col.axis = 'black', col.lab = 'black', col.main='black', cex.main = 1.2)
 }
 
 hist.fitted_life_data <- function(x, type = 'failure', theme = 'base_r'){
