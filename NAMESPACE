@@ -1,6 +1,7 @@
 
 export(
   lifedata, print.lifedata, 
+  median_ranks, median_ranks.lifedata,
   fit_data, fit_data.lifedata,
   plot.fitted_life_data, hist.fitted_life_data, hist.lifedata,
   calculate, calculate.fitted_life_data,

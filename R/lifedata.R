@@ -11,11 +11,36 @@ lifedata <- function(time, status, units = NULL){
   
   new_lifedata
 }
-
 print.lifedata <- function(x){
   pos_or_not <- rep(' ',length(x[[1]]))
   pos_or_not[x[[2]] == 0] <- '+'
   print(paste0(x[[1]],pos_or_not), quote = F)
+}
+
+median_ranks <- function(x, ...) UseMethod('median_ranks')
+median_ranks.lifedata <- function(x, method = 'inverse_F'){
+  #x should be class lifedata
+  temp <- rank(x$time)
+  N <- length(temp)
+  if(method == 'inverse_F'){
+    ms <- 2*(N-temp+1)
+    ns <- 2*temp
+    Fstars <- qf(0.5, ms, ns, lower.tail = F) 
+    mrs <- 1/(1+(Fstars*(N-temp+1)/temp))
+  }
+  if(method == 'inverse_binom'){ #should get equivalent to inverse_F w.o. optimization needed.
+    mrs <- sapply(X = temp, FUN = function(y) solve_for_p(N, y))  
+  }
+  if(method == 'benard'){
+    mrs <- (temp-0.3)/(N+0.4)
+  }
+  return(mrs)
+}
+solve_for_p <- function(N, i, cdf = 0.5){
+  func_to_optim <- function(prob){
+    (sum((choose(N,i:N)*prob^(i:N)*(1-prob)^(N-(i:N))))-cdf)^2
+  }
+  optimize(f = func_to_optim, interval = c(0,1))$minimum
 }
 
 fit_data.lifedata <- function(x, dist = 'weibull'){
