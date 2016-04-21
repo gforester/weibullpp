@@ -114,8 +114,15 @@ plot_cdfs <- function(x, lower.tail, theme){
     }
   }
   
+  #get points to plot
+  pts_ys <- median_ranks(x$data)
+  if(!lower.tail) pts_ys <- 1 - pts_ys
+  pts_xs <- x$data$time[x$data$status == 1]
+    
+  #plot based on theme
   if(theme == 'base_r'){
     plot(xs, ys, type = 'l')
+    points(pts_xs, pts_ys)
   }
   if(theme == 'weibull++'){
     if(lower.tail){
@@ -126,6 +133,7 @@ plot_cdfs <- function(x, lower.tail, theme){
       cdf_y_lab = 'Reliability'
     }
     weibull_theme_plot(xs, ys, cdf_title, 'Time', cdf_y_lab)
+    points(pts_xs, pts_ys, pch = 16, col='blue')
   }
 }
 plot_pdf <- function(x, theme){
