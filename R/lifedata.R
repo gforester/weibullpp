@@ -214,10 +214,15 @@ plot_weibull <- function(x, theme){
   x_mini_ats <- unlist(lapply(X = x_ats, FUN = function(y) y+log10(2:9)))
   x_mini_lbs <- 10^x_mini_ats
   
+  #get points to plot
+  pts_ys <- log10(-log(1-median_ranks(x$data)))
+  pts_xs <- log10(x$data$time[x$data$status == 1])
+  
   if(theme == 'base_r'){
     plot(xs, ys, type = 'l', xaxt = 'n', yaxt = 'n', ann = F)
     axis(side = 1, at = x_ats, labels = x_lbs)
     axis(side = 2, at = y_ats, labels = y_lbs)
+    points(pts_xs, pts_ys)
   }
   if(theme == 'weibull++'){
     par(las = 1, xaxs = 'i', yaxs = 'i', tcl = 0, mar = c(1.6, 2.2, 1.6, 2.1), cex.axis = 0.5, 
@@ -233,6 +238,7 @@ plot_weibull <- function(x, theme){
     abline(v = x_ats, col = 'red', lwd = 0.5)
     abline(h = y_ats, col = 'red', lwd = 0.5)
     lines(xs, ys, col='blue')
+    points(pts_xs, pts_ys, pch = 16, col = 'blue')
     par(las = 0, xaxs = 'r', yaxs = 'r', tcl = -0.5, mar = c(5.1, 4.1, 4.1, 2.1), cex.axis = 1, 
         mgp = c(3,1,0), col.axis = 'black', col.lab = 'black', col.main='black', cex.main = 1.2)
   }
