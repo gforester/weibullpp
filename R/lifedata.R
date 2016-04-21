@@ -81,7 +81,8 @@ fit_data.lifedata <- function(x, dist = 'weibull'){
 
 plot.fitted_life_data <- function(x, type = 'probability', theme = 'base_r'){
   if(type == 'probability'){
-    plot_weibull(x, theme)
+    if(x$dist == 'weibull') {plot_weibull(x, theme)}
+    if(x$dist == 'exponential'){plot_exponential(x,theme)}
   }
   if(type == 'failure'){
     plot_cdfs(x, lower.tail = T, theme)
@@ -140,7 +141,7 @@ plot_pdf <- function(x, theme){
   xmax <- 1.02 * max(x$data[[1]])
   xs <- seq(from=0, to=xmax, length.out = 5E2)
   if(x$dist == 'exponential'){
-    ys <- dexp(xs, shape = x$fit$shape, scale = x$fit$scale)
+    ys <- dexp(xs, rate = 1/x$fit$scale)
   }
   if(x$dist == 'weibull'){
     ys <- dweibull(xs, shape = x$fit$shape, scale = x$fit$scale)
@@ -174,12 +175,7 @@ plot_weibull <- function(x, theme){
   xmax <- 10^(ceiling(log10(max(x$data[[1]]))))
   xmin <- 10^(floor(log10(min(x$data[[1]]))))
   xs <- c(xmin,xmax)
-  if(x$dist == 'exponential'){
-    ys <- pexp(xs, rate = 1/x$fit$scale)  
-  }
-  if(x$dist == 'weibull'){
-    ys <- pweibull(xs, shape = x$fit$shape, scale = x$fit$scale)  
-  }
+  ys <- pweibull(xs, shape = x$fit$shape, scale = x$fit$scale)  
   
   #y tick locations
   ymin <- (floor(log10(ys[1])))
@@ -239,6 +235,66 @@ plot_weibull <- function(x, theme){
     abline(h = y_ats, col = 'red', lwd = 0.5)
     lines(xs, ys, col='blue')
     points(pts_xs, pts_ys, pch = 16, col = 'blue')
+    par(las = 0, xaxs = 'r', yaxs = 'r', tcl = -0.5, mar = c(5.1, 4.1, 4.1, 2.1), cex.axis = 1, 
+        mgp = c(3,1,0), col.axis = 'black', col.lab = 'black', col.main='black', cex.main = 1.2)
+  }
+}
+plot_exponential <- function(x, theme){
+  #get points to plot - needed for y-scaling
+  pts_ys <- log(1-median_ranks(x$data))
+  pts_xs <- x$data$time[x$data$status == 1]
+  
+  #find x-range of plot
+  x_ats <- pretty(x$data$time)
+  if(min(x_ats) > min(x$data$time)){
+    x_ats <- c(min(x_ats) - diff(x_ats)[1] , x_ats)
+  }
+  if(max(x_ats) < max(x$data$time)){
+    x_ats <- c(x_ats, max(x_ats) + diff(x_ats)[1])
+  }
+  x_mini_ats <- pretty(x_ats[1:2])
+  x_mini_ats <- seq(from = x_mini_ats[1], to = x_ats[length(x_ats)],by = diff(x_mini_ats)[1])
+  x_mini_ats <- x_mini_ats[!(x_mini_ats %in% x_ats)]
+  
+  #only need 2 points for straight line
+  xs <- c( x_ats[1], x_ats[length(x_ats)] )
+  rs <- 1-pexp(xs, rate = 1/x$fit$scale)
+  ys <- log(rs)
+  
+  #y_scale
+  pts_y_range <- range(exp(pts_ys))
+  ymin <- floor(log10(min(c(rs[2],pts_y_range[1]))))
+  ymax <- ceiling(log10(max(c(rs[1],pts_y_range[2]))))
+  # if(ymax == 0) ymax = -1
+  y_lbs <- c(10^(ymin:ymax))
+  y_ats <- log(y_lbs)
+  y_mini_lbs <- 10^unlist(lapply(X = y_lbs[-length(y_lbs)], FUN = function(y) log10(y)+log10(2:9)))
+  y_mini_ats <- log(y_mini_lbs)
+  
+  
+  if(theme == 'base_r'){
+    plot(xs, ys, type = 'l', xaxt = 'n', yaxt = 'n', ann = F, ylim = c(min(y_ats),max(y_ats)))
+    axis(side = 1, at = x_ats)
+    axis(side = 2, at = y_ats, labels = y_lbs)
+    axis(side = 2, at = y_mini_ats, labels = F)
+    points(pts_xs, pts_ys)
+  }
+  if(theme == 'weibull++'){
+    par(las = 1, xaxs = 'i', yaxs = 'i', tcl = 0, mar = c(1.6, 2.2, 1.6, 2.1), cex.axis = 0.5, 
+        mgp = c(0.75,0,0), col.axis = 'blue', col.lab = 'red', col.main = 'red', cex.main = 1)
+    plot(xs, ys, type = 'l', xaxt = 'n', yaxt = 'n', ann = F, col='blue',
+         ylim = c(min(y_ats),max(y_ats)))
+    axis(side = 1, at = x_ats, lwd = 0, line = -0.4)
+    axis(side = 2, at = y_ats, labels = y_lbs, lwd = 0, line = 0.1)
+    title(ylab='Reliability', line = 1.25)
+    title(xlab='Time', line = 0.5)
+    title(main='Probability - Exponential', line =0.5)
+    abline(v = x_mini_ats, col = 'green',lwd= 0.5)
+    abline(h = y_mini_ats, col = 'green',lwd= 0.5)
+    abline(v = x_ats, col = 'red', lwd = 0.5)
+    abline(h = y_ats, col = 'red', lwd = 0.5)
+    lines(xs, ys, col='blue')
+    points(pts_xs, pts_ys, pch = 16, col = 'blue', xpd = T)
     par(las = 0, xaxs = 'r', yaxs = 'r', tcl = -0.5, mar = c(5.1, 4.1, 4.1, 2.1), cex.axis = 1, 
         mgp = c(3,1,0), col.axis = 'black', col.lab = 'black', col.main='black', cex.main = 1.2)
   }
