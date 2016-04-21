@@ -19,20 +19,41 @@ print.lifedata <- function(x){
 
 median_ranks <- function(x, ...) UseMethod('median_ranks')
 median_ranks.lifedata <- function(x, method = 'inverse_F'){
-  #x should be class lifedata
-  temp <- rank(x$time)
-  N <- length(temp)
+  N_total <- length(x$time)         #total number of times
+  #ties in rank use default: 'average'
+  if(any(x$status == 0)){
+    raw_rank <- rank(x$time)          #rank all times, regardless of status
+    idx <- x$status == 1              #T/F, T for failure
+    temp <- rep(NA, length(raw_rank)) #resulting rank will be NA for censored data
+    
+    order_failure <- sort(raw_rank[idx])  #rank of just failures
+    for(i in seq_along(order_failure)){
+      if(i != 1){
+        prev <- temp[order_failure[i-1]]  
+      }else{
+        prev <- 0
+      }
+      N_beyond <- sum(x$time >= x$time[order_failure[i]])
+      temp[order_failure[i]] <- prev + ( (N_total+1-prev) / (1+N_beyond) )
+    }
+    #for compatibility, pass only non-NA items. in future, redo
+    temp <- temp[!is.na(temp)]
+  }else{
+    temp <- rank(x$time)  
+  }
+
+  # METHODS to find median rands
   if(method == 'inverse_F'){
-    ms <- 2*(N-temp+1)
+    ms <- 2*(N_total-temp+1)
     ns <- 2*temp
     Fstars <- qf(0.5, ms, ns, lower.tail = F) 
-    mrs <- 1/(1+(Fstars*(N-temp+1)/temp))
+    mrs <- 1/(1+(Fstars*(N_total-temp+1)/temp))
   }
   if(method == 'inverse_binom'){ #should get equivalent to inverse_F w.o. optimization needed.
-    mrs <- sapply(X = temp, FUN = function(y) solve_for_p(N, y))  
+    mrs <- sapply(X = temp, FUN = function(y) solve_for_p(N_total, y))  
   }
   if(method == 'benard'){
-    mrs <- (temp-0.3)/(N+0.4)
+    mrs <- (temp-0.3)/(N_total+0.4)
   }
   return(mrs)
 }
