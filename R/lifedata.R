@@ -69,15 +69,31 @@ fit_data.lifedata <- function(x, dist = 'weibull'){
   
   if(dist == 'exponential'){
     res <- fit_exp(x)
+    mle_cdf <- function(z){
+      pexp(z, 1/res$scale)
+    }
+    n_params <- 1
   }else{
     res <- weibull_mle(x)
+    mle_cdf <- function(z){
+      pweibull(z, res$shape, res$scale)
+    }
+    n_params <- 2
   }
   
-  to_return <- list(data = x, dist = dist, fit = res)
+  if(all(x$status==1)){
+    chisq_test_res <- chi_square_test(x$time, mle_cdf, n_params)
+    gof = list(chisq = chisq_test_res)
+  }else{
+    gof = "only available when all data complete"
+  }
+    
+  to_return <- list(data = x, dist = dist, fit = res, gof = gof)
   class(to_return) <- 'fitted_life_data'
   
   return(to_return)
 }
+
 
 plot.fitted_life_data <- function(x, type = 'probability', theme = 'base_r'){
   if(type == 'probability'){
