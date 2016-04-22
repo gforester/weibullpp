@@ -12,3 +12,4 @@ export(
 )
 export(recurrentdata, plot.recurrentdata, mle_recurrent)
 
+

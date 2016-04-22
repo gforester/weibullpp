@@ -1,4 +1,12 @@
 
+#' Create lifedata Object.
+#' 
+#' @param time numerical vector indicating time-to-event
+#' @param status numerical vector indicating status. 0 for right censored. 1 for failure event.
+#' @param units optional character to denote units of time
+#' @return a \code{lifedata} object
+#' @examples
+#' lifedata(c(90.7, 114.8, 12.0, 144.35, 199.8), c(0,1,1,1,0), 'hours')
 lifedata <- function(time, status, units = NULL){
   #check that time is positive
   if(any(time < 0)) stop('time values must be non-negative')
@@ -17,7 +25,32 @@ print.lifedata <- function(x){
   print(paste0(x[[1]],pos_or_not), quote = F)
 }
 
+#' @title Calculate Median Ranks
+#' 
+#' @description 
+#' s3 generic
+#' 
+#' @details
+#' refer to median_ranks.lifedata
+#' 
+#' @param x only method defined for lifedata objects
 median_ranks <- function(x, ...) UseMethod('median_ranks')
+#' @title Calculate Median Ranks
+#' 
+#' @description 
+#' calculates median ranks of lifedata object.
+#' 
+#' @details
+#' Median ranks are based on. 
+#' 
+#' By default, ranks are calculated based on solving 
+#' 
+#' For censored data, the mean order number of the failure points are determined first.
+#' Median ranks are only calculated for failure points.
+#' 
+#' @param x a lifedata object
+#' @param method indicate calculation method. see details
+#' @return numeric vector corresponding to median ranks for failure data
 median_ranks.lifedata <- function(x, method = 'inverse_F'){
   N_total <- length(x$time)         #total number of times
   #ties in rank use default: 'average'
@@ -64,6 +97,23 @@ solve_for_p <- function(N, i, cdf = 0.5){
   optimize(f = func_to_optim, interval = c(0,1))$minimum
 }
 
+#' @title Fit Distribution to lifedata Object
+#' 
+#' @description 
+#' Fits a distribution to lifedata object.
+#' Only MLE are done and only weibull and exponential distributions are available
+#' 
+#' @details
+#' For exponential distributions, uses analytic solution.
+#' For Weibull distributions, use optim function to find MLE.
+#' 
+#' @param x a lifedata object
+#' @param dist character indicating distribution. only exponential and weibull are available
+#' @return 
+#' A fitted_life_data object.
+#' Object includes original input lifedata object, the distribution fitted, log likelihood, parameter estimates.
+#' If all data points are complete, a chi-square goodness-of-fit output is included
+#' 
 fit_data.lifedata <- function(x, dist = 'weibull'){
   if(!((dist == 'weibull') | (dist == 'exponential'))) stop('dist must be "weibull" or "exponential"')
   
@@ -94,7 +144,35 @@ fit_data.lifedata <- function(x, dist = 'weibull'){
   return(to_return)
 }
 
-
+#' @title Plotting fitted_life_data Objects
+#' 
+#' @description 
+#' Provides various plots of fitted distribution
+#' 
+#' @details
+#' Values for type input
+#' \tabular{ll}{
+#' probability   \tab linearized scale plot. distribution specific.\cr
+#' failure \tab probability of failure over time i.e. CDF\cr
+#' reliability \tab reliability over time i.e. 1-CDF \cr
+#' pdf \tab fitted probability density function \cr
+#' failure rate \tab fitted failure rate i.e. hazard function \cr
+#' }
+#' First 3 plots will included points corresponding to the 
+#' median ranks of the failure data.
+#' 
+#' By convention, in linearized scales, the exponential distribution plots the reliability while 
+#' Weibull plots the unreliability.
+#' 
+#' When theme = 'weibull++', the plots styling is automatically set to mirror Weibull++.
+#' By default, theme = 'base_r' and plots a very simple plot.
+#' At this time, no graphical parameters can be passed.
+#' 
+#' @param x a fitted_life_data object
+#' @param type type of plot desired. default to 'probability'. see details
+#' @param theme character indicating style. only 'base_r' and 'weibull++' are available. see details.
+#' @return 
+#' produces desired plot
 plot.fitted_life_data <- function(x, type = 'probability', theme = 'base_r'){
   if(type == 'probability'){
     if(x$dist == 'weibull') {plot_weibull(x, theme)}
@@ -375,7 +453,37 @@ hist_lifedata <- function(x, status, type, theme){
   }
 }
 
+#' @title Calculate Metrics
+#' 
+#' @description 
+#' generic function for fitted_life_data only at this time
+#' 
+#' @details
+#' see calculate.fitted_life_data
+#' 
+#' @param x only defined for a fitted_life_data object
+#' @return 
+#' returns numeric value
 calculate <- function(x, ...) UseMethod('calculate')
+#' @title Calculate Metrics From Fitted Distribution
+#' 
+#' @description 
+#' calculate various values based on input and fitted distribution
+#' 
+#' @details
+#' Values for value input
+#' \tabular{ll}{
+#' reliability  \tab reliability value at input. Prob(T>input)\cr
+#' failure \tab probability of failure by input. Prob(T<input)\cr
+#' mean life \tab mean of fitted distribution\cr
+#' failure rate \tab failure/hazard at input. Prob(T=input+delta|T>input) \cr
+#' }
+#' 
+#' @param x a fitted_life_data object
+#' @param value desired metric. see details
+#' @param input numeric input for certain values. ignored if not needed.
+#' @return 
+#' desired numeric value
 calculate.fitted_life_data <- function(x, value, input){
   if(!(value %in% c('reliability', 'failure', 'mean life', 'failure rate'))){
     stop(paste('value',value,'not recognized'))
