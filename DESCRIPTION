@@ -1,12 +1,12 @@
 Package: weibullpp
-Version: 0.0.1
-Date: 2016-03-16
+Version: 0.0.2
+Date: 2016-04-22
 Title: weibullpp 
 Authors@R: c(person("Richard", "Leu", role = c("aut", "cre"), email = "rhleu@utexas.edu"))
 Author: Richard [aut, cre]
 Maintainer: Richard Leu <rhleu@utexas.edu>
 Depends: R (>= 3.1.0), rstudioapi, survival
-Description: Replicates funcationality of Weibull++ software from Reliasoft
+Description: reliability engineering statistical analysis
 License:  GPL-3 | file LICENCE
 URL: https://github.com/lxy009/weibullpp
 BugReports: https://github.com/lxy009/weibullpp/issues
