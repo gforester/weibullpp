@@ -176,6 +176,11 @@ plot_weibull <- function(x, theme){
   xmin <- 10^(floor(log10(min(x$data[[1]]))))
   xs <- c(xmin,xmax)
   ys <- pweibull(xs, shape = x$fit$shape, scale = x$fit$scale)  
+  #make sure xmax isn't so large that ys = 1. this will cause inifinities
+  if(ys[2] == 1){
+    xs[2] <- qweibull(0.999, shape = x$fit$shape, scale = x$fit$scale)
+    ys[2] <- 0.999
+  }
   
   #y tick locations
   ymin <- (floor(log10(ys[1])))

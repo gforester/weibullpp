@@ -1,8 +1,17 @@
 
 #brute-force R method for log-likelihood
 weibull_ld_like <- function(theta, lifedata_object){
-  full_like <- sum(sapply(X = lifedata_object[[1]][lifedata_object[[2]] == 1], FUN = dweibull, shape = theta[1], scale = theta[2], log = T))
-  cens_like <- sum(sapply(X = lifedata_object[[1]][lifedata_object[[2]] == 0], FUN = pweibull, shape = theta[1], scale = theta[2], lower.tail=F, log.p = T))
+  data_full <- lifedata_object[[1]][lifedata_object[[2]] == 1]
+  data_cens <- lifedata_object[[1]][lifedata_object[[2]] == 0]
+  full_like <- cens_like <- 0
+  
+  if(length(data_full)>0){
+    full_like <- sum(sapply(X = data_full, FUN = dweibull, shape = theta[1], scale = theta[2], log = T))  
+  }
+  if(length(data_cens)>0){
+    cens_like <- sum(sapply(X = data_cens, FUN = pweibull, shape = theta[1], scale = theta[2], lower.tail=F, log.p = T))
+  }
+  
   return(full_like + cens_like)
 }
 
