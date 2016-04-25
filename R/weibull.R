@@ -21,9 +21,17 @@ weibull_mle <- function(the_data){
   
   func_for_optim <- function(th) -1*weibull_ld_like(th, the_data)
   guesses <- c(1,mean(the_data[[1]]))
-  res <- optim(guesses, func_for_optim, control = list(reltol = 1E-10, maxit = 1E3))
+  res <- optim(guesses, func_for_optim, hessian = T, control = list(reltol = 1E-10, maxit = 1E3))
   
-  mle = list(shape = res$par[1], scale = res$par[2], log_like = -1*res$value)
+  mle = list(shape = res$par[1], scale = res$par[2], log_like = -1*res$value, hessian = -1*res$hessian)
   return(mle)
   
 }
+
+weibull_fisher_ci <- function(mle_res){
+  neg_l <- -1*mle_res$hessian
+  fisher <- solve(neg_l)
+  return(list(shape_delta = sqrt(fisher[1,1]), scale_delta = sqrt(fisher[2,2])))
+}
+
+

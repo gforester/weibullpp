@@ -119,12 +119,14 @@ fit_data.lifedata <- function(x, dist = 'weibull'){
   
   if(dist == 'exponential'){
     res <- fit_exp(x)
+    ses <- NA
     mle_cdf <- function(z){
       pexp(z, 1/res$scale)
     }
     n_params <- 1
   }else{
     res <- weibull_mle(x)
+    ses <- weibull_fisher_ci(res)
     mle_cdf <- function(z){
       pweibull(z, res$shape, res$scale)
     }
@@ -138,7 +140,7 @@ fit_data.lifedata <- function(x, dist = 'weibull'){
     gof = "only available when all data complete"
   }
     
-  to_return <- list(data = x, dist = dist, fit = res, gof = gof)
+  to_return <- list(data = x, dist = dist, fit = res, std_error = ses, gof = gof)
   class(to_return) <- 'fitted_life_data'
   
   return(to_return)
@@ -565,6 +567,7 @@ calculate.fitted_life_data <- function(x, value, input  = NA, cond_input = NA){
         to_return <- pexp(q = input, rate = 1/x$fit$scale)
       }
       if(x$dist == 'weibull'){
+        #for numerical issues - take log of function and work out equation
         num <- pweibull(q = input+cond_input, shape = x$fit$shape, scale = x$fit$scale)  - 
           pweibull(q = cond_input, shape = x$fit$shape, scale = x$fit$scale)
         to_return <- num / pweibull(q = cond_input, shape = x$fit$shape, scale = x$fit$scale, lower.tail = F)
