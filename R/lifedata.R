@@ -493,7 +493,7 @@ calculate <- function(x, ...) UseMethod('calculate')
 #' @return 
 #' desired numeric value
 calculate.fitted_life_data <- function(x, value, input){
-  if(!(value %in% c('reliability', 'failure', 'mean life', 'failure rate'))){
+  if(!(value %in% c('reliability', 'failure', 'mean life', 'failure rate', 'reliable life', 'bx life'))){
     stop(paste('value',value,'not recognized'))
     to_return <- NULL
   }else{
@@ -529,6 +529,24 @@ calculate.fitted_life_data <- function(x, value, input){
       if(x$dist == 'weibull'){
         to_return <- x$fit$shape * (input^(x$fit$shape-1)) * ((1/x$fit$scale)^x$fit$shape)
       }       
+    }
+    #warranty life --------
+    if(value == 'reliable life'){
+      if(x$dist == 'exponential'){
+        to_return <- qexp(p = input, rate = 1/x$fit$scale, lower.tail = F)
+      }
+      if(x$dist == 'weibull'){
+        to_return <- qweibull(p = input, shape = x$fit$shape, scale = x$fit$scale, lower.tail = F)
+      }
+    }
+    #warranty life --------
+    if(value == 'bx life'){
+      if(x$dist == 'exponential'){
+        to_return <- qexp(p = input, rate = 1/x$fit$scale)
+      }
+      if(x$dist == 'weibull'){
+        to_return <- qweibull(p = input, shape = x$fit$shape, scale = x$fit$scale)
+      }
     }
 
   }
