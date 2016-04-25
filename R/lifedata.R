@@ -173,25 +173,26 @@ fit_data.lifedata <- function(x, dist = 'weibull'){
 #' @param theme character indicating style. only 'base_r' and 'weibull++' are available. see details.
 #' @return 
 #' produces desired plot
-plot.fitted_life_data <- function(x, type = 'probability', theme = 'base_r'){
+plot.fitted_life_data <- function(x, type = 'probability', theme = 'base_r', 
+                                  line_par = NULL, point_par = NULL, ...){
   if(type == 'probability'){
-    if(x$dist == 'weibull') {plot_weibull(x, theme)}
-    if(x$dist == 'exponential'){plot_exponential(x,theme)}
+    if(x$dist == 'weibull') {plot_weibull(x, theme, line_par, point_par, ...)}
+    if(x$dist == 'exponential'){plot_exponential(x,theme, line_par, point_par, ...)}
   }
   if(type == 'failure'){
-    plot_cdfs(x, lower.tail = T, theme)
+    plot_cdfs(x, lower.tail = T, theme, line_par, point_par, ...)
   }
   if(type == 'reliability'){
-    plot_cdfs(x, lower.tail = F, theme)
+    plot_cdfs(x, lower.tail = F, theme, line_par, point_par, ...)
   }
   if(type == 'pdf'){
-    plot_pdf(x, theme)
+    plot_pdf(x, theme, ...)
   }
   if(type == 'failure rate'){
-    plot_hazard(x, theme)
+    plot_hazard(x, theme, ...)
   }
 }
-plot_cdfs <- function(x, lower.tail, theme){
+plot_cdfs <- function(x, lower.tail, theme, line_par, point_par, ...){
   xmax <- 1.02 * max(x$data[[1]])
   xs <- seq(from=0, to=xmax, length.out = 5E2)
   if(x$dist == 'exponential'){
@@ -216,8 +217,10 @@ plot_cdfs <- function(x, lower.tail, theme){
     
   #plot based on theme
   if(theme == 'base_r'){
-    plot(xs, ys, type = 'l')
-    points(pts_xs, pts_ys)
+    do.call(plot,c(list(x = xs, y = ys, type = 'l'), line_par, ...))
+    do.call(points, c(list(x = pts_xs, y = pts_ys), point_par, ...))
+    # plot(xs, ys, type = 'l', ...)
+    # points(pts_xs, pts_ys, ...)
   }
   if(theme == 'weibull++'){
     if(lower.tail){
@@ -231,7 +234,7 @@ plot_cdfs <- function(x, lower.tail, theme){
     points(pts_xs, pts_ys, pch = 16, col='blue')
   }
 }
-plot_pdf <- function(x, theme){
+plot_pdf <- function(x, theme, ...){
   xmax <- 1.02 * max(x$data[[1]])
   xs <- seq(from=0, to=xmax, length.out = 5E2)
   if(x$dist == 'exponential'){
@@ -242,7 +245,7 @@ plot_pdf <- function(x, theme){
   }
   
   if(theme == 'base_r'){
-    plot(xs, ys, type = 'l')  
+    plot(xs, ys, type = 'l', ...)  
   }
   if(theme == 'ggplot'){
     plot(xs, ys, type = 'l') 
@@ -252,19 +255,19 @@ plot_pdf <- function(x, theme){
   }
   
 }
-plot_hazard <- function(x, theme){
+plot_hazard <- function(x, theme, ...){
   xmax <- 1.02 * max(x$data[[1]])
   xs <- seq(from=0, to=xmax, length.out = 5E2)
   ys <- sapply(X=xs, FUN = function(z){calculate(x,'failure rate',z)})
   
   if(theme == 'base_r'){
-    plot(xs, ys, type = 'l')  
+    plot(xs, ys, type = 'l', ...)  
   }
   if(theme == 'weibull++'){
     weibull_theme_plot(xs, ys, 'Failure Rate vs. Time', 'Time', 'Failure Rate')
   }
 }
-plot_weibull <- function(x, theme){
+plot_weibull <- function(x, theme, line_par, point_par, ...){
   #only need 2 points for straight line
   xmax <- 10^(ceiling(log10(max(x$data[[1]]))))
   xmin <- 10^(floor(log10(min(x$data[[1]]))))
@@ -314,10 +317,12 @@ plot_weibull <- function(x, theme){
   pts_xs <- log10(x$data$time[x$data$status == 1])
   
   if(theme == 'base_r'){
-    plot(xs, ys, type = 'l', xaxt = 'n', yaxt = 'n', ann = F)
+    do.call(plot, c(list(x = xs, y = ys, type = 'l', xaxt = 'n', yaxt = 'n'), line_par, ...))
+    # plot(xs, ys, type = 'l', xaxt = 'n', yaxt = 'n', ...)
     axis(side = 1, at = x_ats, labels = x_lbs)
     axis(side = 2, at = y_ats, labels = y_lbs)
-    points(pts_xs, pts_ys)
+    do.call(points, c(list(x = pts_xs, y = pts_ys), point_par, ...))
+    # points(pts_xs, pts_ys, ...)
   }
   if(theme == 'weibull++'){
     par(las = 1, xaxs = 'i', yaxs = 'i', tcl = 0, mar = c(1.6, 2.2, 1.6, 2.1), cex.axis = 0.5, 
@@ -338,7 +343,7 @@ plot_weibull <- function(x, theme){
         mgp = c(3,1,0), col.axis = 'black', col.lab = 'black', col.main='black', cex.main = 1.2)
   }
 }
-plot_exponential <- function(x, theme){
+plot_exponential <- function(x, theme, line_par, point_par, ...){
   #get points to plot - needed for y-scaling
   pts_ys <- log(1-median_ranks(x$data))
   pts_xs <- x$data$time[x$data$status == 1]
@@ -372,11 +377,14 @@ plot_exponential <- function(x, theme){
   
   
   if(theme == 'base_r'){
-    plot(xs, ys, type = 'l', xaxt = 'n', yaxt = 'n', ann = F, ylim = c(min(y_ats),max(y_ats)))
+    do.call(plot, c(list(x = xs, y = ys, type = 'l', xaxt = 'n', yaxt = 'n', ylim = c(min(y_ats), max(y_ats))),
+                    line_par, ...))
+    # plot(xs, ys, type = 'l', xaxt = 'n', yaxt = 'n', ylim = c(min(y_ats),max(y_ats)), ...)
     axis(side = 1, at = x_ats)
     axis(side = 2, at = y_ats, labels = y_lbs)
     axis(side = 2, at = y_mini_ats, labels = F)
-    points(pts_xs, pts_ys)
+    do.call(points, c(list(x = pts_xs, y = pts_ys), point_par, ...))
+    # points(pts_xs, pts_ys, ...)
   }
   if(theme == 'weibull++'){
     par(las = 1, xaxs = 'i', yaxs = 'i', tcl = 0, mar = c(1.6, 2.2, 1.6, 2.1), cex.axis = 0.5, 
