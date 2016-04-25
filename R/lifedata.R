@@ -492,8 +492,9 @@ calculate <- function(x, ...) UseMethod('calculate')
 #' @param input numeric input for certain values. ignored if not needed.
 #' @return 
 #' desired numeric value
-calculate.fitted_life_data <- function(x, value, input){
-  if(!(value %in% c('reliability', 'failure', 'mean life', 'failure rate', 'reliable life', 'bx life'))){
+calculate.fitted_life_data <- function(x, value, input  = NA, cond_input = NA){
+  if(!(value %in% c('reliability', 'failure', 'mean life', 'failure rate', 'reliable life', 'bx life',
+                    'cond reliab', 'cond fail'))){
     stop(paste('value',value,'not recognized'))
     to_return <- NULL
   }else{
@@ -548,7 +549,27 @@ calculate.fitted_life_data <- function(x, value, input){
         to_return <- qweibull(p = input, shape = x$fit$shape, scale = x$fit$scale)
       }
     }
-
+    #conditional reliability --------
+    if(value == 'cond reliab'){
+      if(x$dist == 'exponential'){
+        to_return <- pexp(q = input, rate = 1/x$fit$scale, lower.tail = F)
+      }
+      if(x$dist == 'weibull'){
+        to_return <- pweibull(q = input+cond_input, shape = x$fit$shape, scale = x$fit$scale, lower.tail = F) / 
+          pweibull(q = cond_input, shape = x$fit$shape, scale = x$fit$scale, lower.tail = F)
+      }
+    }
+    #conditional failure --------
+    if(value == 'cond fail'){
+      if(x$dist == 'exponential'){
+        to_return <- pexp(q = input, rate = 1/x$fit$scale)
+      }
+      if(x$dist == 'weibull'){
+        num <- pweibull(q = input+cond_input, shape = x$fit$shape, scale = x$fit$scale)  - 
+          pweibull(q = cond_input, shape = x$fit$shape, scale = x$fit$scale)
+        to_return <- num / pweibull(q = cond_input, shape = x$fit$shape, scale = x$fit$scale, lower.tail = F)
+      }
+    }
   }
   
   return(to_return)
