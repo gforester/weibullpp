@@ -119,7 +119,8 @@ fit_data.lifedata <- function(x, dist = 'weibull'){
   
   if(dist == 'exponential'){
     res <- fit_exp(x)
-    ses <- NA
+    ses <- res$se$fisher
+    res <- list(scale = res$scale, log_like = res$log_like)
     mle_cdf <- function(z){
       pexp(z, 1/res$scale)
     }
