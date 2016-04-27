@@ -489,6 +489,27 @@ hist_lifedata <- function(x, status, type, theme){
   }
 }
 
+pieplot.fitted_life_data <- function(x, theme = 'base_r', ...){
+  pieplot_lifedata(x$data$status, theme, ...)
+}
+pieplot.lifedata <- function(x, theme = 'base_r', ...){
+  pieplot_lifedata(x$status, theme , ...)
+}
+pieplot_lifedata <- function(x, theme, ...){
+  if(!theme %in% c('base_r','weibull++')){
+    warning('Theme not defined. Defaulting to base r')
+    theme = 'base_r'
+  }
+  
+  if(theme == 'base_r'){
+    pie(table(x), ...)
+  }
+  if(theme == 'weibull++'){
+    x[x == 0] <- 2
+    pie(table(x), labels = c('Failures', 'Suspensions'), col = c('red','green'),main = 'F/S Pie', mar = rep(2.1, 4))
+  }
+}
+
 #' @title Calculate Metrics
 #' 
 #' @description 

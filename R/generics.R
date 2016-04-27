@@ -10,3 +10,5 @@
 fit_data <- function(x,...){
   UseMethod('fit_data')
 }
+
+pieplot <- function(x, ...) UseMethod('pieplot')
