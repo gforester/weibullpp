@@ -510,6 +510,54 @@ pieplot_lifedata <- function(x, theme, ...){
   }
 }
 
+timeline <- function(x, ...) UseMethod('timeline')
+timeline.lifedata <- function(x, theme = 'base_r', ...){
+  timeline_lifedata(x, theme)
+}
+timeline.fitted_life_data <- function(x, theme = 'base_r', ...){
+  timeline_lifedata(x$data, theme)
+}
+timeline_lifedata <- function(x, theme, ...){
+  par(mar = c(2.1, 1.1, 4.1, 1.1))
+  idx <- order(x$time, decreasing = T)
+  new_times<-x$time[idx]
+  new_status <-x$status[idx]
+  plot.new()
+  plot.window(c(0,1),c(0,1), xaxs = 'i', yaxs='i', ...)
+  delta_y <- 1/(length(x$status)+1)
+  ys <- seq(from = delta_y, by = delta_y, length.out = length(x$status))
+  xs <- new_times/(1.1*max(x$time))
+  if(theme == 'base_r'){
+    col_c <- rep('red', length(ys))
+    col_c[new_status == 0] <- 'green'
+    pch_c <- rep('X', length(ys))
+    pch_c[new_status == 0] <- '>'
+  }
+  if(theme == 'weibull++'){
+    col_c <- rep('red', length(ys))
+    col_c[new_status == 0] <- 'green'
+    pch_c <- rep('X', length(ys))
+    pch_c[new_status == 0] <- '>'  
+  }
+  segments(x0 = 0, x1 = xs, y0 = ys, col=col_c)
+  points(x = xs, y = ys, pch = pch_c, col = col_c)
+  x_lbs <- pretty(c(0, 1.1*max(x$time)))
+  box()
+  if(theme == 'base_r'){
+    axis(side = 1, at = x_lbs/(1.1*max(x$time)),labels = x_lbs)
+  }
+  if(theme == 'weibull++'){
+    axis(side = 1, at = x_lbs/(1.1*max(x$time)),tick = F, labels = x_lbs, col.axis = 'blue', col.lab = 'red',mgp = c(0.75,0,0))
+    abline(v = x_lbs/(1.1*max(x$time)), col = 'red', lwd = 0.5)
+    x_minis <- pretty(x_lbs[1:2])
+    x_mini_ats <- seq(from = diff(x_minis[1:2])/(1.1*max(x$time)), to = 1, by = diff(x_minis[1:2])/(1.1*max(x$time)))
+    x_mini_ats <- x_mini_ats[!(x_mini_ats %in% (x_lbs/(1.1*max(x$time))))]
+    abline(v = x_mini_ats, col = 'green', lwd = 0.25)
+    title(main = 'F/S Timeline', xlab = 'Time',col.main = 'red',col.lab = 'red', mgp = c(0.75,0,0))
+  }
+  par(mar = c(5.1, 4.1, 4.1, 2.1))
+}
+
 #' @title Calculate Metrics
 #' 
 #' @description 
