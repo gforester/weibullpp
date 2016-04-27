@@ -62,12 +62,14 @@ median_ranks.lifedata <- function(x, method = 'inverse_F'){
     order_failure <- sort(raw_rank[idx])  #rank of just failures
     for(i in seq_along(order_failure)){
       if(i != 1){
-        prev <- temp[order_failure[i-1]]  
+        prev <- temp[original_idx]  
       }else{
         prev <- 0
       }
-      N_beyond <- sum(x$time >= x$time[order_failure[i]])
-      temp[order_failure[i]] <- prev + ( (N_total+1-prev) / (1+N_beyond) )
+      #N_beyond <- sum(x$time >= x$time[order_failure[i]])
+      original_idx <- which(raw_rank == order_failure[i])
+      N_beyond <- sum(x$time >= x$time[original_idx])
+      temp[original_idx] <- prev + ( (N_total+1-prev) / (1+N_beyond) )
     }
     #for compatibility, pass only non-NA items. in future, redo
     temp <- temp[!is.na(temp)]
@@ -137,7 +139,19 @@ fit_data.lifedata <- function(x, dist = 'weibull', method = 'mle'){
     }
     n_params <- 1
   }else{
-    res <- weibull_mle(x)
+    if(method == 'mle'){
+      res <- weibull_mle(x)
+    }
+    if((method == 'rrx') | (method == 'rry')){
+      res <- weibull_rr(x)
+      if(method == 'rry'){
+        res <- list(shape = res$shape_rry, scale = res$scale_rry, log_like = res$log_like_rry)
+      }else{
+        res <- list(shape = res$shape_rrx, scale = res$scale_rrx, log_like = res$log_like_rrx)
+      }
+      res$hessian <- -1 * optimHess(par = c(res$shape, res$scale), fn = function(th, the_data) -1*weibull_ld_like(th, the_data), 
+                                    the_data = x)
+    }
     ses <- weibull_fisher_ci(res)
     mle_cdf <- function(z){
       pweibull(z, res$shape, res$scale)

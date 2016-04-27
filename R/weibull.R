@@ -34,4 +34,40 @@ weibull_fisher_ci <- function(mle_res){
   return(list(shape_delta = sqrt(fisher[1,1]), scale_delta = sqrt(fisher[2,2])))
 }
 
+weibull_hessian <- function(x, shape, scale){
+  return(-1*optimHess(c(shape, scale), weibull_ld_like, lifedata_object = x))
+}
 
+#rank regression
+weibull_rr <- function(x){
+  
+  #get median ranks estimate of probability of failure
+  ts <- x$time[x$status == 1]
+  ps <- median_ranks(x)
+  
+  #linearize
+  ys <- log10(-log(1-ps))
+  xs <- log10(ts)
+  
+  #est slope-intercept (b-a)
+  rho <- cor(xs,ys)
+  sdx <- sd(xs)
+  sdy <- sd(ys)
+  b_y <- rho*sdy/sdx
+  b_x <- rho*sdx/sdy
+  a_y <- mean(ys)-b_y*mean(xs)
+  a_x <- mean(xs)-b_x*mean(ys)
+  
+  #est shape and scale
+  shape_rry <- b_y
+  shape_rrx <- 1/b_x
+  scale_rry <- 10^(-a_y/b_y) 
+  scale_rrx <- 10^(a_x/(b_x*shape_rrx))
+    
+  return(list(scale_rry = scale_rry, scale_rrx = scale_rrx, 
+              shape_rry = shape_rry, shape_rrx = shape_rrx,
+              log_like_rry = exp_log_like(x, scale_rry),
+              log_like_rrx = exp_log_like(x, scale_rrx),
+              rho = rho))
+  
+}
