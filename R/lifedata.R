@@ -114,13 +114,24 @@ solve_for_p <- function(N, i, cdf = 0.5){
 #' Object includes original input lifedata object, the distribution fitted, log likelihood, parameter estimates.
 #' If all data points are complete, a chi-square goodness-of-fit output is included
 #' 
-fit_data.lifedata <- function(x, dist = 'weibull'){
+fit_data.lifedata <- function(x, dist = 'weibull', method = 'mle'){
   if(!((dist == 'weibull') | (dist == 'exponential'))) stop('dist must be "weibull" or "exponential"')
   
   if(dist == 'exponential'){
-    res <- fit_exp(x)
-    ses <- res$se$fisher
-    res <- list(scale = res$scale, log_like = res$log_like)
+    if(method == 'mle'){
+      res <- fit_exp(x)
+      ses <- res$se$fisher
+      res <- list(scale = res$scale, log_like = res$log_like)  
+    }
+    if((method == 'rrx') | (method == 'rry')){
+      res <- exp_rr(x)
+      if(method == 'rry'){
+        res <- list(scale = res$scale_rry, log_like = res$log_like_rry)
+      }else{
+        res <- list(scale = res$scale_rrx, log_like = res$log_like_rrx)
+      }
+      ses <- exp_se(res$scale, sum(x[[2]]))
+    }
     mle_cdf <- function(z){
       pexp(z, 1/res$scale)
     }
