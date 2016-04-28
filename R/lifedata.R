@@ -221,23 +221,26 @@ plot.fitted_life_data <- function(x, type = 'probability', theme = 'base_r',
   }
 }
 plot_cdfs <- function(x, lower.tail, theme, line_par, point_par, ...){
-  xmax <- 1.02 * max(x$data[[1]])
+  max_time <- max(x$data[[1]])
+  xmax <- 1.02 * max_time
   xs <- seq(from=0, to=xmax, length.out = 5E2)
-  if(x$dist == 'exponential'){
-    if(lower.tail){
-      ys <- pexp(xs, rate = 1/x$fit$scale)  
-    }else{
-      ys <- pexp(xs, rate = 1/x$fit$scale, lower.tail = F)
+  if(lower.tail){
+    #hack to get it working until uniformity on calculation among dists
+    if(x$dist == 'exponential'){
+      ys <- sapply(X=xs, FUN = function(z){calculate(x,'failure',z)$value})
     }
-  }
-  if(x$dist == 'weibull'){
-    if(lower.tail){
-      ys <- pweibull(xs, shape = x$fit$shape, scale = x$fit$scale)  
-    }else{
-      ys <- pweibull(xs, shape = x$fit$shape, scale = x$fit$scale, lower.tail = F) 
+    if(x$dist == 'weibull'){
+      ys <- calculate(x,'failure',xs)
     }
+  }else{
+    #hack to get it working until uniformity on calculation among dists
+    if(x$dist == 'exponential'){
+      ys <- sapply(X=xs, FUN = function(z){calculate(x,'reliability',z)$value})
+    }
+    if(x$dist == 'weibull'){
+      ys <- calculate(x,'reliability',xs)
+    } 
   }
-  #above should be change to use calculation() to get ys.
   
   #get points to plot
   pts_ys <- median_ranks(x$data)
@@ -246,7 +249,7 @@ plot_cdfs <- function(x, lower.tail, theme, line_par, point_par, ...){
     
   #plot based on theme
   if(theme == 'base_r'){
-    to_add = list(xlab = 'Time', ylab = 'Probability')
+    to_add = list(xlab = 'Time', ylab = 'Probability', xlim = c(0,0.98*max_time))
     if(lower.tail){
       to_add$main = 'Prob. of Failure'
     }else{
@@ -261,15 +264,62 @@ plot_cdfs <- function(x, lower.tail, theme, line_par, point_par, ...){
     if(any(names(list(...)) == 'main')){
       to_add$main = NULL
     }
+    if(any(names(list(...)) == 'xlim')){
+      to_add$xlim = NULL
+    }
     if(length(to_add) == 0){
       to_add = NULL
     }
-    do.call(plot,c(list(x = xs, y = ys, type = 'l'), line_par, to_add, ...))
-    do.call(points, c(list(x = pts_xs, y = pts_ys), point_par, ...))
+    do.call(plot,c(list(x = xs, y = ys, type = 'l'), line_par, to_add, list(...)))
+    if(max_time < par()$usr[2]){
+      extend_xs <- seq(from = max_time, to = par()$usr[2], length.out = 5E2)
+      if(lower.tail){
+        #hack to get it working until uniformity on calculation among dists
+        if(x$dist == 'exponential'){
+          extend_ys <- sapply(X=extend_xs, FUN = function(z){calculate(x,'failure',z)$value})
+        }
+        if(x$dist == 'weibull'){
+          extend_ys <- calculate(x,'failure',extend_xs)
+        }
+      }else{
+        #hack to get it working until uniformity on calculation among dists
+        if(x$dist == 'exponential'){
+          extend_ys <- sapply(X=extend_xs, FUN = function(z){calculate(x,'reliability',z)$value})
+        }
+        if(x$dist == 'weibull'){
+          extend_ys <- calculate(x,'reliability',extend_xs)
+        } 
+      }
+      do.call(lines,c(list(x = extend_xs, y = extend_ys),line_par))
+    }
+    do.call(points, c(list(x = pts_xs, y = pts_ys), point_par, list(...)))
     # plot(xs, ys, type = 'l', ...)
     # points(pts_xs, pts_ys, ...)
   }
   if(theme == 'weibull++'){
+    xmarks <- pretty(xs)
+    if(max(xmarks)> max(xs)){
+      extend_xs <- seq(from = max(xs), to = max(xmarks), length.out = 1E2)
+      if(lower.tail){
+        #hack to get it working until uniformity on calculation among dists
+        if(x$dist == 'exponential'){
+          extend_ys <- sapply(X=extend_xs, FUN = function(z){calculate(x,'failure',z)$value})
+        }
+        if(x$dist == 'weibull'){
+          extend_ys <- calculate(x,'failure',extend_xs)
+        }
+      }else{
+        #hack to get it working until uniformity on calculation among dists
+        if(x$dist == 'exponential'){
+          extend_ys <- sapply(X=extend_xs, FUN = function(z){calculate(x,'reliability',z)$value})
+        }
+        if(x$dist == 'weibull'){
+          extend_ys <- calculate(x,'reliability',extend_xs)
+        } 
+      }
+      xs <- c(xs, extend_xs)
+      ys <- c(ys, extend_ys)
+    }
     if(lower.tail){
       cdf_title = 'Unreliability vs. Time'
       cdf_y_lab = 'Unreliability'
@@ -290,14 +340,38 @@ plot_pdf <- function(x, theme, ...){
   if(x$dist == 'weibull'){
     ys <- dweibull(xs, shape = x$fit$shape, scale = x$fit$scale)
   }
+  #roll up calculation for future
   
   if(theme == 'base_r'){
-    plot(xs, ys, type = 'l', ...)  
+    plot(xs, ys, type = 'l', ...)
+    if(xmax < par()$usr[2]){
+      extend_xs <- seq(from = xmax, to = par()$usr[2], length.out = 5E2)
+      if(x$dist == 'exponential'){
+        extend_ys <- dexp(extend_xs, rate = 1/x$fit$scale)
+      }
+      if(x$dist == 'weibull'){
+        extend_ys <- dweibull(extend_xs, shape = x$fit$shape, scale = x$fit$scale)
+      }
+      #roll up calculation for future
+      lines(extend_xs, extend_ys, ...)
+    }
   }
   if(theme == 'ggplot'){
     plot(xs, ys, type = 'l') 
   }
   if(theme == 'weibull++'){
+    xmarks <- pretty(xs)
+    if(max(xmarks)> xmax){
+      extend_xs <- seq(from = max(xs), to = max(xmarks), length.out = 1E2)
+      if(x$dist == 'exponential'){
+        extend_ys <- dexp(extend_xs, rate = 1/x$fit$scale)
+      }
+      if(x$dist == 'weibull'){
+        extend_ys <- dweibull(extend_xs, shape = x$fit$shape, scale = x$fit$scale)
+      } 
+      xs <- c(xs, extend_xs)
+      ys <- c(ys, extend_ys)
+    }
     weibull_theme_plot(xs, ys, 'Probability Density Function', 'Time', 'f(t)')
   }
   
@@ -305,12 +379,36 @@ plot_pdf <- function(x, theme, ...){
 plot_hazard <- function(x, theme, ...){
   xmax <- 1.02 * max(x$data[[1]])
   xs <- seq(from=0, to=xmax, length.out = 5E2)
-  ys <- sapply(X=xs, FUN = function(z){calculate(x,'failure rate',z)})
+  ys <- sapply(X=xs, FUN = function(z){calculate(x,'failure rate',z)$value})
   
   if(theme == 'base_r'){
     plot(xs, ys, type = 'l', ...)  
+    if(xmax < par()$usr[2]){
+      extend_xs <- seq(from = xmax, to = par()$usr[2], length.out = 5E2)
+      #hack to get it working until uniformity on calculation among dists
+      if(x$dist == 'exponential'){
+        extend_ys <- sapply(X=extend_xs, FUN = function(z){calculate(x,'failure rate',z)$value})
+      }
+      if(x$dist == 'weibull'){
+        extend_ys <- calculate(x,'failure rate',extend_xs)
+      }
+      lines(extend_xs, extend_ys, ...)
+    }
   }
   if(theme == 'weibull++'){
+    xmarks <- pretty(xs)
+    if(max(xmarks)> xmax){
+      extend_xs <- seq(from = max(xs), to = max(xmarks), length.out = 1E2)
+      #hack to get it working until uniformity on calculation among dists
+      if(x$dist == 'exponential'){
+        extend_ys <- sapply(X=extend_xs, FUN = function(z){calculate(x,'failure rate',z)$value})
+      }
+      if(x$dist == 'weibull'){
+        extend_ys <- calculate(x,'failure rate',extend_xs)
+      }
+      xs <- c(xs, extend_xs)
+      ys <- c(ys, extend_ys)
+    }
     weibull_theme_plot(xs, ys, 'Failure Rate vs. Time', 'Time', 'Failure Rate')
   }
 }
@@ -359,6 +457,9 @@ plot_weibull <- function(x, theme, line_par, point_par, ...){
   x_mini_ats <- unlist(lapply(X = x_ats, FUN = function(y) y+log10(2:9)))
   x_mini_lbs <- 10^x_mini_ats
   
+  slope <- diff(ys)/diff(xs)
+  intercept <- ys[1]-slope*xs[1]
+  
   #get points to plot
   pts_ys <- log10(-log(1-median_ranks(x$data)))
   pts_xs <- log10(x$data$time[x$data$status == 1])
@@ -377,11 +478,12 @@ plot_weibull <- function(x, theme, line_par, point_par, ...){
     if(length(to_add) == 0){
       to_add = NULL
     }
-    do.call(plot, c(list(x = xs, y = ys, type = 'l', xaxt = 'n', yaxt = 'n'), line_par, to_add, ...))
+    do.call(plot, c(list(x = xs, y = ys, type = 'l', xaxt = 'n', yaxt = 'n'), line_par, to_add, list(...)))
+    abline(a = intercept, b = slope, line_par)
     # plot(xs, ys, type = 'l', xaxt = 'n', yaxt = 'n', ...)
     axis(side = 1, at = x_ats, labels = x_lbs)
     axis(side = 2, at = y_ats, labels = y_lbs)
-    do.call(points, c(list(x = pts_xs, y = pts_ys), point_par, ...))
+    do.call(points, c(list(x = pts_xs, y = pts_ys), point_par, list(...)))
     # points(pts_xs, pts_ys, ...)
   }
   if(theme == 'weibull++'){
@@ -420,10 +522,12 @@ plot_exponential <- function(x, theme, line_par, point_par, ...){
   x_mini_ats <- seq(from = x_mini_ats[1], to = x_ats[length(x_ats)],by = diff(x_mini_ats)[1])
   x_mini_ats <- x_mini_ats[!(x_mini_ats %in% x_ats)]
   
-  #only need 2 points for straight line
+  #only need 2 points for straight line to get equation
   xs <- c( x_ats[1], x_ats[length(x_ats)] )
   rs <- 1-pexp(xs, rate = 1/x$fit$scale)
   ys <- log(rs)
+  slope <- diff(ys)/diff(xs)
+  intercept <- ys[1]-slope*xs[1]
   
   #y_scale
   pts_y_range <- range(exp(pts_ys))
@@ -452,12 +556,13 @@ plot_exponential <- function(x, theme, line_par, point_par, ...){
       to_add = NULL
     }
     do.call(plot, c(list(x = xs, y = ys, type = 'l', xaxt = 'n', yaxt = 'n', ylim = c(min(y_ats), max(y_ats))),
-                    line_par, to_add, ...))
+                    line_par, to_add, list(...)))
+    abline(a = intercept, b = slope, line_par)
     # plot(xs, ys, type = 'l', xaxt = 'n', yaxt = 'n', ylim = c(min(y_ats),max(y_ats)), ...)
     axis(side = 1, at = x_ats)
     axis(side = 2, at = y_ats, labels = y_lbs)
     axis(side = 2, at = y_mini_ats, labels = F)
-    do.call(points, c(list(x = pts_xs, y = pts_ys), point_par, ...))
+    do.call(points, c(list(x = pts_xs, y = pts_ys), point_par, list(...)))
     # points(pts_xs, pts_ys, ...)
   }
   if(theme == 'weibull++'){
@@ -490,7 +595,7 @@ weibull_theme_plot <- function(x,y,lab1, lab2, lab3){
   yminis <- seq(from = ymarks[1], to = ymarks[length(ymarks)], by = diff(pretty(ymarks[1:2]))[1])
   plot(x, y, type = 'l', main = '', xlab = "", ylab = "",
        xlim = c(min(xmarks),max(xmarks)), ylim = c(min(ymarks),max(ymarks)),yaxt = 'n', xaxt = 'n',
-       col = 'blue') 
+       col = 'blue')
   axis(side = 2, at = ymarks, tick=F, line = 0.1)
   axis(side = 1, at = xmarks, tick=F, line = -0.4)
   title(ylab=lab3, line = 1.25)
