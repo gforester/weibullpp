@@ -4,7 +4,8 @@
 \alias{plot.fitted_life_data}
 \title{Plotting fitted_life_data Objects}
 \usage{
-\method{plot}{fitted_life_data}(x, type = "probability", theme = "base_r")
+\method{plot}{fitted_life_data}(x, type = "probability", theme = "base_r",
+  line_par = NULL, point_par = NULL, ...)
 }
 \arguments{
 \item{x}{a fitted_life_data object}
@@ -12,6 +13,10 @@
 \item{type}{type of plot desired. default to 'probability'. see details}
 
 \item{theme}{character indicating style. only 'base_r' and 'weibull++' are available. see details.}
+
+\item{line_par}{a list containing graphical parameters for lines}
+
+\item{point_par}{a list contianing graphical parameters for points}
 }
 \value{
 produces desired plot
@@ -36,6 +41,10 @@ Weibull plots the unreliability.
 
 When theme = 'weibull++', the plots styling is automatically set to mirror Weibull++.
 By default, theme = 'base_r' and plots a very simple plot.
-At this time, no graphical parameters can be passed.
+
+Graphical parameters can be passed when theme = 'base_r' but not for others.
+When passing graphical parameters, those for lines should be passed as a list in line_par.
+Those for points should be passed as a list in point_par.
+All others e.g., xlab, should be passed generically (...)
 }
 

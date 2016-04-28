@@ -1,4 +1,3 @@
-
 #' Create lifedata Object.
 #' 
 #' @param time numerical vector indicating time-to-event
@@ -92,6 +91,7 @@ median_ranks.lifedata <- function(x, method = 'inverse_F'){
   }
   return(mrs)
 }
+
 solve_for_p <- function(N, i, cdf = 0.5){
   func_to_optim <- function(prob){
     (sum((choose(N,i:N)*prob^(i:N)*(1-prob)^(N-(i:N))))-cdf)^2
@@ -102,19 +102,27 @@ solve_for_p <- function(N, i, cdf = 0.5){
 #' @title Fit Distribution to lifedata Object
 #' 
 #' @description 
-#' Fits a distribution to lifedata object.
-#' Only MLE are done and only weibull and exponential distributions are available
+#' Fits a distribution to lifedata object using either MLE or rank regression.
+#' Only weibull and exponential distributions are available.
 #' 
 #' @details
-#' For exponential distributions, uses analytic solution.
-#' For Weibull distributions, use optim function to find MLE.
+#' When method = 'mle', uses \code{optim} function to find MLEs.
+#' The only exception is for the exponential distributions, which uses the analytic solution.
+#' For rank regression, 'rrx' and 'rry' mean rank regression with least-square distance in x and y, respectively.
+#' For rank regression, ranks are calculated by \code{median_ranks.lifedata}.
+#' 
+#' Standard errors are calculated based on Fisher matrix estimation.
+#' The matrix comes from the Hessian output from \code{optim}.
 #' 
 #' @param x a lifedata object
 #' @param dist character indicating distribution. only exponential and weibull are available
+#' @param method which method to estimate parameters of distribution. can be mle, rrx, or rry. see details.
 #' @return 
 #' A fitted_life_data object.
 #' Object includes original input lifedata object, the distribution fitted, log likelihood, parameter estimates.
-#' If all data points are complete, a chi-square goodness-of-fit output is included
+#' If all data points are complete, a chi-square goodness-of-fit output is included as well.
+#' 
+#' @seealso \code{\link{median_ranks.lifedata}} \code{\link{optim}}
 #' 
 fit_data.lifedata <- function(x, dist = 'weibull', method = 'mle'){
   if(!((dist == 'weibull') | (dist == 'exponential'))) stop('dist must be "weibull" or "exponential"')
@@ -194,11 +202,18 @@ fit_data.lifedata <- function(x, dist = 'weibull', method = 'mle'){
 #' 
 #' When theme = 'weibull++', the plots styling is automatically set to mirror Weibull++.
 #' By default, theme = 'base_r' and plots a very simple plot.
-#' At this time, no graphical parameters can be passed.
+#' 
+#' Graphical parameters can be passed when theme = 'base_r' but not for others.
+#' When passing graphical parameters, those for lines should be passed as a list in line_par.
+#' Those for points should be passed as a list in point_par.
+#' All others e.g., xlab, should be passed generically (...)
 #' 
 #' @param x a fitted_life_data object
 #' @param type type of plot desired. default to 'probability'. see details
 #' @param theme character indicating style. only 'base_r' and 'weibull++' are available. see details.
+#' @param line_par a list containing graphical parameters for lines
+#' @param point_par a list contianing graphical parameters for points
+#' 
 #' @return 
 #' produces desired plot
 plot.fitted_life_data <- function(x, type = 'probability', theme = 'base_r', 
@@ -610,16 +625,65 @@ weibull_theme_plot <- function(x,y,lab1, lab2, lab3){
       mgp = c(3,1,0), col.axis = 'black', col.lab = 'black', col.main='black', cex.main = 1.2)
 }
 
+#' @title Histogram fitted_life_data Objects
+#' 
+#' @description 
+#' failure/suspension histogram
+#' 
+#' @details
+#' see \code{\link{hist_lifedata}}
+#' 
+#' @return 
+#' produces desired plot
+#' 
+#' @seealso 
+#' \code{\link{hist_lifedata}}
+#' 
 hist.fitted_life_data <- function(x, type = 'failure', theme = 'base_r'){
   times <- x$data$time
   status <- x$data$status
   hist_lifedata(times, status, type, theme) 
 }
+#' @title Histogram lifedata Objects
+#' 
+#' @description 
+#' failure/suspension histogram
+#' 
+#' @details
+#' see \code{\link{hist_lifedata}}
+#' 
+#' @return 
+#' produces desired plot
+#' 
+#' @seealso 
+#' \code{\link{hist_lifedata}}
+#' 
 hist.lifedata <- function(x, type = 'failure', theme = 'base_r'){
   times <- x$time
   status <- x$status
   hist_lifedata(times, status, type, theme)
 }
+#' @title Histogram for Life Data Analysis
+#' 
+#' @description 
+#' failure/suspension histogram
+#' 
+#' @details
+#' Produces histogram of either failure points or suspension points.
+#' No graphical parameters can be passed
+#' Theme inputs work similar to \code{\link{plot.fitted_life_data}}
+#' 
+#' @param x times from lifedata
+#' @param status status from lifedata
+#' @param type either failure or suspension
+#' @param theme either base_r or weibull++
+#' 
+#' @return 
+#' produces desired plot
+#' 
+#' @seealso 
+#' \code{\link{hist}} \code{\link{plot.fitted_life_data}}
+#' 
 hist_lifedata <- function(x, status, type, theme){
   if(!(type %in% c('failure','suspension'))){
     stop('type must be either failure or suspension')
@@ -640,12 +704,57 @@ hist_lifedata <- function(x, status, type, theme){
   }
 }
 
+#' @title Pie Chart fitted_life_data Objects
+#' 
+#' @description 
+#' failure/suspension pie chart
+#' 
+#' @details
+#' see \code{\link{pieplot_lifedata}}
+#' 
+#' @return 
+#' produces desired plot
+#' 
+#' @seealso 
+#' \code{\link{pieplot_lifedata}}
+#' 
 pieplot.fitted_life_data <- function(x, theme = 'base_r', ...){
   pieplot_lifedata(x$data$status, theme, ...)
 }
+#' @title Pie Chart lifedata Objects
+#' 
+#' @description 
+#' failure/suspension pie chart
+#' 
+#' @details
+#' see \code{\link{pieplot_lifedata}}
+#' 
+#' @return 
+#' produces desired plot
+#' 
+#' @seealso 
+#' \code{\link{pieplot_lifedata}}
+#' 
 pieplot.lifedata <- function(x, theme = 'base_r', ...){
   pieplot_lifedata(x$status, theme , ...)
 }
+#' @title Pie Charts for Life Data Analysis
+#' 
+#' @description 
+#' failure/suspension pie chart
+#' 
+#' @details
+#' Graphical parameters can be passed when theme = 'base_r'.
+#' 
+#' @param x status values passed from generics
+#' @param theme either 'base_r' or 'weibull++'
+#' 
+#' @return 
+#' produces desired plot
+#' 
+#' @seealso 
+#' \code{\link{pie}}
+#' 
 pieplot_lifedata <- function(x, theme, ...){
   if(!theme %in% c('base_r','weibull++')){
     warning('Theme not defined. Defaulting to base r')
@@ -668,6 +777,24 @@ timeline.lifedata <- function(x, theme = 'base_r', ...){
 timeline.fitted_life_data <- function(x, theme = 'base_r', ...){
   timeline_lifedata(x$data, theme)
 }
+#' @title Timeline Charts for Life Data Analysis
+#' 
+#' @description 
+#' Timeline chart showing times
+#' 
+#' @details
+#' Chart is not designed for large number of data points.
+#' Graphical parameters can be passed when theme = 'base_r'.
+#' 
+#' @param x lifedata object
+#' @param theme either 'base_r' or 'weibull++'
+#' 
+#' @return 
+#' produces desired plot
+#' 
+#' @seealso 
+#' \code{\link{pie}}
+#' 
 timeline_lifedata <- function(x, theme, ...){
   par(mar = c(2.1, 1.1, 4.1, 1.1))
   idx <- order(x$time, decreasing = T)
@@ -733,13 +860,20 @@ calculate <- function(x, ...) UseMethod('calculate')
 #' failure \tab probability of failure by input. Prob(T<input)\cr
 #' mean life \tab mean of fitted distribution\cr
 #' failure rate \tab failure/hazard at input. Prob(T=input+delta|T>input) \cr
+#' reliable life \tab t for Prob(T>t) = input \cr
+#' bx life \tab t for Prob(T<t) = input \cr
+#' cond reliab \tab Prob(T>input+cond_input|T>cond_input) \cr
+#' cond fail \tab Prob(T<input+cond_input|T>cond_input) \cr
 #' }
 #' 
 #' @param x a fitted_life_data object
 #' @param value desired metric. see details
 #' @param input numeric input for certain values. ignored if not needed.
+#' @param cond_input input for conditional probability calculations. ignored otherwise.
+#' @param alpha alpha level for bounds
+#' 
 #' @return 
-#' desired numeric value
+#' desired numeric value and bounds, if appropriate
 calculate.fitted_life_data <- function(x, value, input  = NA, cond_input = NA, alpha = 0.05){
   if(!(value %in% c('reliability', 'failure', 'mean life', 'failure rate', 'reliable life', 'bx life',
                     'cond reliab', 'cond fail'))){

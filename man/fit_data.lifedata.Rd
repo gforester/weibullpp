@@ -4,24 +4,34 @@
 \alias{fit_data.lifedata}
 \title{Fit Distribution to lifedata Object}
 \usage{
-\method{fit_data}{lifedata}(x, dist = "weibull")
+\method{fit_data}{lifedata}(x, dist = "weibull", method = "mle")
 }
 \arguments{
 \item{x}{a lifedata object}
 
 \item{dist}{character indicating distribution. only exponential and weibull are available}
+
+\item{method}{which method to estimate parameters of distribution. can be mle, rrx, or rry. see details.}
 }
 \value{
 A fitted_life_data object.
 Object includes original input lifedata object, the distribution fitted, log likelihood, parameter estimates.
-If all data points are complete, a chi-square goodness-of-fit output is included
+If all data points are complete, a chi-square goodness-of-fit output is included as well.
 }
 \description{
-Fits a distribution to lifedata object.
-Only MLE are done and only weibull and exponential distributions are available
+Fits a distribution to lifedata object using either MLE or rank regression.
+Only weibull and exponential distributions are available.
 }
 \details{
-For exponential distributions, uses analytic solution.
-For Weibull distributions, use optim function to find MLE.
+When method = 'mle', uses \code{optim} function to find MLEs.
+The only exception is for the exponential distributions, which uses the analytic solution.
+For rank regression, 'rrx' and 'rry' mean rank regression with least-square distance in x and y, respectively.
+For rank regression, ranks are calculated by \code{median_ranks.lifedata}.
+
+Standard errors are calculated based on Fisher matrix estimation.
+The matrix comes from the Hessian output from \code{optim}.
+}
+\seealso{
+\code{\link{median_ranks.lifedata}} \code{\link{optim}}
 }
 

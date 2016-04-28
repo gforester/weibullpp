@@ -13,6 +13,9 @@ fit_data(x, ...)
 fits distribution to data
 }
 \details{
-refer to fit_data.lifedata
+refer to \code{\link{fit_data.lifedata}}
+}
+\seealso{
+\code{\link{fit_data.lifedata}}
 }
 

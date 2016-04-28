@@ -4,7 +4,8 @@
 \alias{calculate.fitted_life_data}
 \title{Calculate Metrics From Fitted Distribution}
 \usage{
-\method{calculate}{fitted_life_data}(x, value, input)
+\method{calculate}{fitted_life_data}(x, value, input = NA, cond_input = NA,
+  alpha = 0.05)
 }
 \arguments{
 \item{x}{a fitted_life_data object}
@@ -12,9 +13,13 @@
 \item{value}{desired metric. see details}
 
 \item{input}{numeric input for certain values. ignored if not needed.}
+
+\item{cond_input}{input for conditional probability calculations. ignored otherwise.}
+
+\item{alpha}{alpha level for bounds}
 }
 \value{
-desired numeric value
+desired numeric value and bounds, if appropriate
 }
 \description{
 calculate various values based on input and fitted distribution
@@ -26,6 +31,10 @@ reliability  \tab reliability value at input. Prob(T>input)\cr
 failure \tab probability of failure by input. Prob(T<input)\cr
 mean life \tab mean of fitted distribution\cr
 failure rate \tab failure/hazard at input. Prob(T=input+delta|T>input) \cr
+reliable life \tab t for Prob(T>t) = input \cr
+bx life \tab t for Prob(T<t) = input \cr
+cond reliab \tab Prob(T>input+cond_input|T>cond_input) \cr
+cond fail \tab Prob(T<input+cond_input|T>cond_input) \cr
 }
 }
 
