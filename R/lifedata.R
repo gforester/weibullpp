@@ -237,6 +237,7 @@ plot_cdfs <- function(x, lower.tail, theme, line_par, point_par, ...){
       ys <- pweibull(xs, shape = x$fit$shape, scale = x$fit$scale, lower.tail = F) 
     }
   }
+  #above should be change to use calculation() to get ys.
   
   #get points to plot
   pts_ys <- median_ranks(x$data)
@@ -245,7 +246,25 @@ plot_cdfs <- function(x, lower.tail, theme, line_par, point_par, ...){
     
   #plot based on theme
   if(theme == 'base_r'){
-    do.call(plot,c(list(x = xs, y = ys, type = 'l'), line_par, ...))
+    to_add = list(xlab = 'Time', ylab = 'Probability')
+    if(lower.tail){
+      to_add$main = 'Prob. of Failure'
+    }else{
+      to_add$main = 'Reliability'
+    }
+    if(any(names(list(...)) == 'xlab')){
+      to_add$xlab = NULL
+    }
+    if(any(names(list(...)) == 'ylab')){
+      to_add$ylab = NULL
+    }
+    if(any(names(list(...)) == 'main')){
+      to_add$main = NULL
+    }
+    if(length(to_add) == 0){
+      to_add = NULL
+    }
+    do.call(plot,c(list(x = xs, y = ys, type = 'l'), line_par, to_add, ...))
     do.call(points, c(list(x = pts_xs, y = pts_ys), point_par, ...))
     # plot(xs, ys, type = 'l', ...)
     # points(pts_xs, pts_ys, ...)
@@ -345,7 +364,20 @@ plot_weibull <- function(x, theme, line_par, point_par, ...){
   pts_xs <- log10(x$data$time[x$data$status == 1])
   
   if(theme == 'base_r'){
-    do.call(plot, c(list(x = xs, y = ys, type = 'l', xaxt = 'n', yaxt = 'n'), line_par, ...))
+    to_add = list(xlab = 'Time', ylab = 'Probability', main = 'Prob. of Failure')
+    if(any(names(list(...)) == 'xlab')){
+      to_add$xlab = NULL
+    }
+    if(any(names(list(...)) == 'ylab')){
+      to_add$ylab = NULL
+    }
+    if(any(names(list(...)) == 'main')){
+      to_add$main = NULL
+    }
+    if(length(to_add) == 0){
+      to_add = NULL
+    }
+    do.call(plot, c(list(x = xs, y = ys, type = 'l', xaxt = 'n', yaxt = 'n'), line_par, to_add, ...))
     # plot(xs, ys, type = 'l', xaxt = 'n', yaxt = 'n', ...)
     axis(side = 1, at = x_ats, labels = x_lbs)
     axis(side = 2, at = y_ats, labels = y_lbs)
@@ -405,8 +437,22 @@ plot_exponential <- function(x, theme, line_par, point_par, ...){
   
   
   if(theme == 'base_r'){
+    to_add = list(xlab = 'Time', ylab = 'Probability')
+    to_add$main = 'Reliability'
+    if(any(names(list(...)) == 'xlab')){
+      to_add$xlab = NULL
+    }
+    if(any(names(list(...)) == 'ylab')){
+      to_add$ylab = NULL
+    }
+    if(any(names(list(...)) == 'main')){
+      to_add$main = NULL
+    }
+    if(length(to_add) == 0){
+      to_add = NULL
+    }
     do.call(plot, c(list(x = xs, y = ys, type = 'l', xaxt = 'n', yaxt = 'n', ylim = c(min(y_ats), max(y_ats))),
-                    line_par, ...))
+                    line_par, to_add, ...))
     # plot(xs, ys, type = 'l', xaxt = 'n', yaxt = 'n', ylim = c(min(y_ats),max(y_ats)), ...)
     axis(side = 1, at = x_ats)
     axis(side = 2, at = y_ats, labels = y_lbs)
