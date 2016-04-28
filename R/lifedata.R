@@ -589,84 +589,88 @@ calculate <- function(x, ...) UseMethod('calculate')
 #' @param input numeric input for certain values. ignored if not needed.
 #' @return 
 #' desired numeric value
-calculate.fitted_life_data <- function(x, value, input  = NA, cond_input = NA, alpha){
+calculate.fitted_life_data <- function(x, value, input  = NA, cond_input = NA, alpha = 0.05){
   if(!(value %in% c('reliability', 'failure', 'mean life', 'failure rate', 'reliable life', 'bx life',
                     'cond reliab', 'cond fail'))){
     stop(paste('value',value,'not recognized'))
     to_return <- NULL
   }else{
-    #probability of reliability and failure -------------------
-    if(value %in% c('reliability', 'failure')){
-      if(value == 'reliability'){
-        use_lower_tail = F
-      }else{
-        use_lower_tail = T
+    if(x$dist == 'exponential'){
+      to_return <- exp_calc(x, type = value, input = input, cond_input = cond_input, alpha = alpha)
+    }else{
+      #probability of reliability and failure -------------------
+      if(value %in% c('reliability', 'failure')){
+        if(value == 'reliability'){
+          use_lower_tail = F
+        }else{
+          use_lower_tail = T
+        } 
+        
+        if(x$dist == 'exponential'){
+          to_return <- pexp(input, 1/x$fit$scale, lower.tail = use_lower_tail)
+        }
+        if(x$dist == 'weibull'){
+          to_return <- pweibull(input, x$fit$shape, x$fit$scale, lower.tail = use_lower_tail)
+        }
+      }
+      #mean life ---------------
+      if(value == 'mean life'){
+        if(x$dist == 'exponential'){
+          to_return <- x$fit$scale
+        }
+        if(x$dist == 'weibull'){
+          to_return <- x$fit$scale * gamma(1+(1/x$fit$shape))
+        }  
+      }
+      #failure rate ------------
+      if(value == 'failure rate'){
+        if(x$dist == 'exponential'){
+          to_return <- 1/x$fit$scale 
+        }
+        if(x$dist == 'weibull'){
+          to_return <- x$fit$shape * (input^(x$fit$shape-1)) * ((1/x$fit$scale)^x$fit$shape)
+        }       
+      }
+      #warranty life --------
+      if(value == 'reliable life'){
+        if(x$dist == 'exponential'){
+          to_return <- qexp(p = input, rate = 1/x$fit$scale, lower.tail = F)
+        }
+        if(x$dist == 'weibull'){
+          to_return <- qweibull(p = input, shape = x$fit$shape, scale = x$fit$scale, lower.tail = F)
+        }
+      }
+      #warranty life --------
+      if(value == 'bx life'){
+        if(x$dist == 'exponential'){
+          to_return <- qexp(p = input, rate = 1/x$fit$scale)
+        }
+        if(x$dist == 'weibull'){
+          to_return <- qweibull(p = input, shape = x$fit$shape, scale = x$fit$scale)
+        }
+      }
+      #conditional reliability --------
+      if(value == 'cond reliab'){
+        if(x$dist == 'exponential'){
+          to_return <- pexp(q = input, rate = 1/x$fit$scale, lower.tail = F)
+        }
+        if(x$dist == 'weibull'){
+          to_return <- pweibull(q = input+cond_input, shape = x$fit$shape, scale = x$fit$scale, lower.tail = F) / 
+            pweibull(q = cond_input, shape = x$fit$shape, scale = x$fit$scale, lower.tail = F)
+        }
+      }
+      #conditional failure --------
+      if(value == 'cond fail'){
+        if(x$dist == 'exponential'){
+          to_return <- pexp(q = input, rate = 1/x$fit$scale)
+        }
+        if(x$dist == 'weibull'){
+          #for numerical issues - take log of function and work out equation
+          num <- pweibull(q = input+cond_input, shape = x$fit$shape, scale = x$fit$scale)  - 
+            pweibull(q = cond_input, shape = x$fit$shape, scale = x$fit$scale)
+          to_return <- num / pweibull(q = cond_input, shape = x$fit$shape, scale = x$fit$scale, lower.tail = F)
+        }
       } 
-      
-      if(x$dist == 'exponential'){
-        to_return <- pexp(input, 1/x$fit$scale, lower.tail = use_lower_tail)
-      }
-      if(x$dist == 'weibull'){
-        to_return <- pweibull(input, x$fit$shape, x$fit$scale, lower.tail = use_lower_tail)
-      }
-    }
-    #mean life ---------------
-    if(value == 'mean life'){
-      if(x$dist == 'exponential'){
-        to_return <- x$fit$scale
-      }
-      if(x$dist == 'weibull'){
-        to_return <- x$fit$scale * gamma(1+(1/x$fit$shape))
-      }  
-    }
-    #failure rate ------------
-    if(value == 'failure rate'){
-      if(x$dist == 'exponential'){
-        to_return <- 1/x$fit$scale 
-      }
-      if(x$dist == 'weibull'){
-        to_return <- x$fit$shape * (input^(x$fit$shape-1)) * ((1/x$fit$scale)^x$fit$shape)
-      }       
-    }
-    #warranty life --------
-    if(value == 'reliable life'){
-      if(x$dist == 'exponential'){
-        to_return <- qexp(p = input, rate = 1/x$fit$scale, lower.tail = F)
-      }
-      if(x$dist == 'weibull'){
-        to_return <- qweibull(p = input, shape = x$fit$shape, scale = x$fit$scale, lower.tail = F)
-      }
-    }
-    #warranty life --------
-    if(value == 'bx life'){
-      if(x$dist == 'exponential'){
-        to_return <- qexp(p = input, rate = 1/x$fit$scale)
-      }
-      if(x$dist == 'weibull'){
-        to_return <- qweibull(p = input, shape = x$fit$shape, scale = x$fit$scale)
-      }
-    }
-    #conditional reliability --------
-    if(value == 'cond reliab'){
-      if(x$dist == 'exponential'){
-        to_return <- pexp(q = input, rate = 1/x$fit$scale, lower.tail = F)
-      }
-      if(x$dist == 'weibull'){
-        to_return <- pweibull(q = input+cond_input, shape = x$fit$shape, scale = x$fit$scale, lower.tail = F) / 
-          pweibull(q = cond_input, shape = x$fit$shape, scale = x$fit$scale, lower.tail = F)
-      }
-    }
-    #conditional failure --------
-    if(value == 'cond fail'){
-      if(x$dist == 'exponential'){
-        to_return <- pexp(q = input, rate = 1/x$fit$scale)
-      }
-      if(x$dist == 'weibull'){
-        #for numerical issues - take log of function and work out equation
-        num <- pweibull(q = input+cond_input, shape = x$fit$shape, scale = x$fit$scale)  - 
-          pweibull(q = cond_input, shape = x$fit$shape, scale = x$fit$scale)
-        to_return <- num / pweibull(q = cond_input, shape = x$fit$shape, scale = x$fit$scale, lower.tail = F)
-      }
     }
   }
   
