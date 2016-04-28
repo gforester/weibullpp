@@ -494,7 +494,7 @@ plot_weibull <- function(x, theme, line_par, point_par, ...){
       to_add = NULL
     }
     do.call(plot, c(list(x = xs, y = ys, type = 'l', xaxt = 'n', yaxt = 'n'), line_par, to_add, list(...)))
-    abline(a = intercept, b = slope, line_par)
+    do.call(abline,c(list(a = intercept, b = slope), line_par))
     # plot(xs, ys, type = 'l', xaxt = 'n', yaxt = 'n', ...)
     axis(side = 1, at = x_ats, labels = x_lbs)
     axis(side = 2, at = y_ats, labels = y_lbs)
@@ -572,7 +572,7 @@ plot_exponential <- function(x, theme, line_par, point_par, ...){
     }
     do.call(plot, c(list(x = xs, y = ys, type = 'l', xaxt = 'n', yaxt = 'n', ylim = c(min(y_ats), max(y_ats))),
                     line_par, to_add, list(...)))
-    abline(a = intercept, b = slope, line_par)
+    do.call(abline,c(list(a = intercept, b = slope), line_par))
     # plot(xs, ys, type = 'l', xaxt = 'n', yaxt = 'n', ylim = c(min(y_ats),max(y_ats)), ...)
     axis(side = 1, at = x_ats)
     axis(side = 2, at = y_ats, labels = y_lbs)
