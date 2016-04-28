@@ -1,15 +1,15 @@
 # weibullpp 
 weibullpp is an R package designed for reliability engineering.
 It is meant to add to community of packages in R for survival analysis.
-[CRAN Task View: Survival Analysis](https://cran.r-project.org/web/views/Survival.html)
+See [CRAN Task View: Survival Analysis](https://cran.r-project.org/web/views/Survival.html) for other packages.
 Another goal is to offer an open-source alternative to commercial software such as Reliasoft's Weibull++.
 To this end, many plots and calculations available in Weibull++ will be made available in the package.
 
-As of version 0.2, the package is restricted to the following
+As of version 0.3, the package is restricted to the following
 * life data analysis 
 * right censoring
 * weibull and exponential distribution
-* parameteric fitting by MLE
+* standard errors estimated by Fisher Information method
 
 ## Life Data Analysis
 The `lifedata()` function will take the input times and censoring status to create a `lifedata` object.
@@ -22,12 +22,15 @@ x = lifedata(c(90.7, 114.8, 12.0, 144.35, 199.8), c(0,1,1,1,0), 'hours')
 ```
 To fit data to a distribution, use `lifedata()`. 
 The result is a `fitted_life_data` object.
-This object constains the original data, the distribution fitted, the fitted values, and goodness-of-fit values.
+This object constains the original data, the distribution fitted, the fitted values, the log-likelihood, standard errors, and goodness-of-fit values, if possible.
+The default method is MLE for parameter estimates.
+Standard errors estimated from Fisher matrix.
 Note: you may see warnings outputted by the optimization routine when fitting Weibulls.
-Example:
+Examples:
 ```R
 y =  fit_data(x) #fit weibull distribution by default
 y_exp=fit_data(x, dist = 'exponential') #fit exponential distribution
+y =  fit_data(x, method = 'rry') #fit weibull distribution using rank regression on y instead of MLE
 ```
 The package provides several plot types of the fitted distribution.
 These include: probability on linearized scales, CDF (unreliability), reliability, PDF, and failure rate (hazard function).
@@ -47,20 +50,27 @@ plot(y, type = 'pdf') #pdf of fitted distribution
 ```
 For styling purposes, an optional `theme` input can accept values of either `'base_r'` or `'weibull++`.
 The latter produces a plot that looks similar to those produced by Weibull++.
-As of v0.2, graphical parameters can NOT be passed; we will strive to have this functionality in the next release.
 ```R
 plot(y, theme = 'weibull++') #linearized scale plot with Weibull++ styling
 ```
+Graphical parameters can be passed when theme = ``base_r``.
+For plots that have both points and lines, graphical parameters are passed as separate lists.
+All other parameters can be passed as usual.
+```R
+plot(y, line_par = list(lwd = 2, col = 'red'), point_par = list(pch = 16, col = 'blue', cex = 0.6), main = 'Weibull paper')
+```
 
-Histograms can be plotted of the failures or suspension points.
-The function can take either `lifedata` objects or `fitted_life_data` objects.
-At this time, they do NOT accept `weibull++` theme inputs.
-NOTE: this functionality is in its early infancy.
+Histograms, pie charts, and timeline charts are also available.
+These functions can take either `lifedata` objects or `fitted_life_data` objects.
+NOTE: histogram functionality is in its early infancy and does not respect them input nor allow graphical parameters to be passed
 Examples:
 ```R
-hist(x) #input from lifedata object
 hist(y, type = 'failure') #histogram of failure points, input is fitted_life_data_object
 hist(y, type = 'suspension') #histogram of suspension points
+pieplot(y)
+pieplot(y, theme = 'weibull++')
+timeline(y)
+timeline(y, theme = 'weibull++')
 ```
 
 Calculation of metrics on fitted data is done through the `calculate(...)` function.
@@ -71,6 +81,10 @@ calculate(fit, 'reliability', 100) #probability of surviving to t=100
 calculate(fit, 'failure', 100) #probability of failure before t=100
 calculate(fit, 'mean life', NA) #mean time to failure
 calculate(fit, 'failure rate',100) #aka hazard function; instantaneous number of failures per unit time at t = 100
+calculate(fit, 'reliable life', 0.75) #time when reliability is 75%
+calculate(fit, 'bx life', 0.75) #time when prob. of failure is 75%
+calculate(fit, 'cond reliab', 100, 50 ) #reliability within next 100 if survived to 50
+calculate(fit, 'cond fail', 100, 50) #probability of failing within next 100 if survived to 50
 ```
 
 ## Recurrent Event Analysis
