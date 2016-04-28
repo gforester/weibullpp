@@ -57,4 +57,47 @@ exp_rr <- function(x){
               rho = rho))
 }
 
+#calculations
+exp_calc <- function(fit, type, input = NA, cond_input = NA, alpha = 0.05){
+  to_return <- 'type not available for distribution'
+  
+  #scale breadth
+  z_star <- abs(qnorm(alpha/2))
+  scale_upper <- fit$fit$scale + z_star*fit$fit$std_err
+  scale_lower <- fit$fit$scale - z_star*fit$fit$std_err
+  
+  # reliabililty and probability of failure
+  if(type %in% c('reliability','failure'){
+    lower_tail <- switch(type,'reliability' = F, 'failure' = T)
+    to_return <- pexp(input, 1/x$fit$scale, lower.tail = lower_tail)
+    upper <- pexp(input, 1/scale_upper, lower.tail = lower_tail)
+    lower <- pexp(input, 1/scale_lower, lower.tail = lower_tail)
+  }
+  # mean time to failure
+  if(type == 'mean life'){
+    to_return <- x$fit$scale
+    upper <- scale_upper
+    lower <- scale_lower
+  }
+  # failure rate aka hazard function
+  if(type == 'failure rate'){
+    to_return <- 1/x$fit$scale 
+    upper <- 1/scale_lower
+    lower <- 1/scale_upper
+  }
+  # reliable life aka warranty life and BX% life
+  if(type %in% c('reliable life','bx life')){
+    lower_tail <- switch(type,'reliable life' = F, 'bx life' = T)
+    to_return <- qexp(p = input, rate = 1/x$fit$scale, lower.tail = lower_tail)
+    
+  }
+  # cond distribution 
+  if(type %in% c('cond reliab','cond fail')){
+    lower_tail <- switch(type,'cond reliab' = F, 'cond fail' = T)  
+    to_return <- pexp(q = input, rate = 1/x$fit$scale, lower.tail = lower_tail)
+    upper <- pexp(q = input, rate = 1/scale_upper, lower.tail = lower_tail)
+    lower <- pexp(q = input, rate = 1/scale_lower, lower.tail = lower_tail)
+  }
+}
+
 

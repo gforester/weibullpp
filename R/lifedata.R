@@ -589,7 +589,7 @@ calculate <- function(x, ...) UseMethod('calculate')
 #' @param input numeric input for certain values. ignored if not needed.
 #' @return 
 #' desired numeric value
-calculate.fitted_life_data <- function(x, value, input  = NA, cond_input = NA){
+calculate.fitted_life_data <- function(x, value, input  = NA, cond_input = NA, alpha){
   if(!(value %in% c('reliability', 'failure', 'mean life', 'failure rate', 'reliable life', 'bx life',
                     'cond reliab', 'cond fail'))){
     stop(paste('value',value,'not recognized'))
