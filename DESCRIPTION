@@ -7,7 +7,6 @@ Author: Richard [aut, cre]
 Maintainer: Richard Leu <rhleu@utexas.edu>
 Depends:
     R (>= 3.1.0),
-    rstudioapi,
     survival
 Description: reliability engineering statistical analysis
 License: GPL-3 | file LICENCE
