@@ -1,4 +1,6 @@
 # weibullpp 
+Checkout the project's <a href='http://lxy009.github.io/weibullpp/'>site</a> hosted on github pages. 
+
 weibullpp is an R package designed for reliability engineering.
 It is meant to add to community of packages in R for survival analysis.
 See [CRAN Task View: Survival Analysis](https://cran.r-project.org/web/views/Survival.html) for other packages.
