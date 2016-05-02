@@ -71,3 +71,66 @@ weibull_rr <- function(x){
               rho = rho))
   
 }
+
+#calculations
+weibull_calc <- function(fit, type, input = NA, cond_input = NA, alpha = 0.05){
+  to_return <- 'type not available for distribution'
+
+  #mapping of parameter estimates and convariance matrix
+  shape <- fit$fit$shape
+  scale <- fit$fit$scale
+  cov_mat <- solve(-1*fit$fit$hessian)
+
+  #critical value
+  z_star <- abs(qnorm(alpha/2))
+
+  # reliabililty and probability of failure
+  if(type %in% c('reliability','failure')){
+    lower_tail <- switch(type,'reliability' = F, 'failure' = T)
+    to_return <- pweibull(input, shape, scale, lower.tail = lower_tail)
+    u <- shape*(log(input) - log(scale))
+    var_u <- ((u^2)*cov_mat[1,1]/(shape^2)) + ((shape^2)*cov_mat[2,2]/(scale^2)) - 
+      (2*u*cov_mat[1,2]/scale)
+    if(lower_tail){
+      limits <- 1-exp(-1*exp(u + c(-1,1)*z_star*sqrt(var_u)))  
+    }else{
+      limits <- exp(-1*exp(u + c(-1,1)*z_star*sqrt(var_u))) 
+    }
+    upper <- max(limits)
+    lower <- min(limits)
+  }
+  # mean time to failure
+  if(type == 'mean life'){
+    to_return <- fit$fit$scale
+    upper <- scale_upper
+    lower <- scale_lower
+  }
+  # failure rate aka hazard function
+  if(type == 'failure rate'){
+    to_return <- 1/fit$fit$scale
+    upper <- 1/scale_lower
+    lower <- 1/scale_upper
+  }
+  # reliable life aka warranty life and BX% life
+  if(type %in% c('reliable life','bx life')){
+    lower_tail <- switch(type,'reliable life' = F, 'bx life' = T)
+    to_return <- qexp(p = input, rate = 1/fit$fit$scale, lower.tail = lower_tail)
+    limits <- qexp(p = input, rate = 1/c(scale_upper, scale_lower), lower.tail = lower_tail)
+    upper <- max(limits)
+    lower <- min(limits)
+  }
+  # cond distribution
+  if(type %in% c('cond reliab','cond fail')){
+    lower_tail <- switch(type,'cond reliab' = F, 'cond fail' = T)
+    to_return <- pexp(q = input, rate = 1/fit$fit$scale, lower.tail = lower_tail)
+    limits <- pexp(q = input, rate = 1/c(scale_upper, scale_lower), lower.tail = lower_tail)
+    upper <- max(limits)
+    lower <- min(limits)
+  }
+
+  return(list(value = to_return, upper_limit = upper, lower_limit = lower))
+
+}
+
+
+

@@ -885,18 +885,19 @@ calculate.fitted_life_data <- function(x, value, input  = NA, cond_input = NA, a
     }else{
       #probability of reliability and failure -------------------
       if(value %in% c('reliability', 'failure')){
-        if(value == 'reliability'){
-          use_lower_tail = F
-        }else{
-          use_lower_tail = T
-        } 
-        
-        if(x$dist == 'exponential'){
-          to_return <- pexp(input, 1/x$fit$scale, lower.tail = use_lower_tail)
-        }
-        if(x$dist == 'weibull'){
-          to_return <- pweibull(input, x$fit$shape, x$fit$scale, lower.tail = use_lower_tail)
-        }
+        to_return <- weibull_calc(x, type = value, input = input, cond_input = cond_input, alpha =alpha)
+        # if(value == 'reliability'){
+        #   use_lower_tail = F
+        # }else{
+        #   use_lower_tail = T
+        # } 
+        # 
+        # if(x$dist == 'exponential'){
+        #   to_return <- pexp(input, 1/x$fit$scale, lower.tail = use_lower_tail)
+        # }
+        # if(x$dist == 'weibull'){
+        #   to_return <- pweibull(input, x$fit$shape, x$fit$scale, lower.tail = use_lower_tail)
+        # }
       }
       #mean life ---------------
       if(value == 'mean life'){
