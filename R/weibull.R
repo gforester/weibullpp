@@ -101,13 +101,14 @@ weibull_calc <- function(fit, type, input = NA, cond_input = NA, alpha = 0.05){
   }
   # mean time to failure
   if(type == 'mean life'){
-    to_return <- fit$fit$scale
+    to_return <- scale * gamma(1+(1/shape))
+    delta <- gamma(1+(1/shape))*sqrt(1) + scale*1
     upper <- scale_upper
     lower <- scale_lower
   }
   # failure rate aka hazard function
   if(type == 'failure rate'){
-    to_return <- 1/fit$fit$scale
+    to_return <- shape * (input^(shape-1)) * ((1/scale)^shape)
     upper <- 1/scale_lower
     lower <- 1/scale_upper
   }

@@ -240,21 +240,9 @@ plot_cdfs <- function(x, lower.tail, theme, line_par, point_par, ...){
   xmax <- 1.02 * max_time
   xs <- seq(from=0, to=xmax, length.out = 5E2)
   if(lower.tail){
-    #hack to get it working until uniformity on calculation among dists
-    if(x$dist == 'exponential'){
-      ys <- sapply(X=xs, FUN = function(z){calculate(x,'failure',z)$value})
-    }
-    if(x$dist == 'weibull'){
-      ys <- calculate(x,'failure',xs)
-    }
+    ys <- sapply(X=xs, FUN = function(z){calculate(x,'failure',z)$value})
   }else{
-    #hack to get it working until uniformity on calculation among dists
-    if(x$dist == 'exponential'){
-      ys <- sapply(X=xs, FUN = function(z){calculate(x,'reliability',z)$value})
-    }
-    if(x$dist == 'weibull'){
-      ys <- calculate(x,'reliability',xs)
-    } 
+    ys <- sapply(X=xs, FUN = function(z){calculate(x,'reliability',z)$value})
   }
   
   #get points to plot
@@ -289,48 +277,50 @@ plot_cdfs <- function(x, lower.tail, theme, line_par, point_par, ...){
     if(max_time < par()$usr[2]){
       extend_xs <- seq(from = max_time, to = par()$usr[2], length.out = 5E2)
       if(lower.tail){
-        #hack to get it working until uniformity on calculation among dists
-        if(x$dist == 'exponential'){
-          extend_ys <- sapply(X=extend_xs, FUN = function(z){calculate(x,'failure',z)$value})
-        }
-        if(x$dist == 'weibull'){
-          extend_ys <- calculate(x,'failure',extend_xs)
-        }
+        extend_ys <- sapply(X=extend_xs, FUN = function(z){calculate(x,'failure',z)$value})
       }else{
-        #hack to get it working until uniformity on calculation among dists
-        if(x$dist == 'exponential'){
-          extend_ys <- sapply(X=extend_xs, FUN = function(z){calculate(x,'reliability',z)$value})
-        }
-        if(x$dist == 'weibull'){
-          extend_ys <- calculate(x,'reliability',extend_xs)
-        } 
+        extend_ys <- sapply(X=extend_xs, FUN = function(z){calculate(x,'reliability',z)$value})
       }
       do.call(lines,c(list(x = extend_xs, y = extend_ys),line_par))
     }
     do.call(points, c(list(x = pts_xs, y = pts_ys), point_par, list(...)))
-    # plot(xs, ys, type = 'l', ...)
-    # points(pts_xs, pts_ys, ...)
+  }
+  if(theme == 'ggplot'){
+    passed_pars <- list(...)
+    
+    to_add <- character()
+    if(any(names(passed_pars) == 'xlab')){
+      to_add <- append(to_add, paste0('xlab("',passed_pars$xlab,'")'))
+    }
+    if(any(names(passed_pars) == 'ylab')){
+      to_add <- append(to_add, paste0('ylab("',passed_pars$ylab,'")'))
+    }
+    
+    points <- c("data = data.frame(x = pts_xs, y = pts_ys)","mapping = aes(x=x,y=y)")
+    if(any(names(point_par) == 'col')){
+      points <- append(points, paste0("colour='",point_par$col,"'"))
+    }
+    lines <- c("data=data.frame(x=xs,y=ys)","mapping=aes(x=x,y=y)")
+    if(any(names(line_par) == 'col')){
+      lines <- append(lines, paste0("colour='",line_par$col,"'"))
+    }
+    base_plot <- ggplot()
+    eval(parse(text = paste0('to_plot <- base_plot+geom_point(',
+                             paste0(points,collapse=","),
+                             ")+geom_line(",paste0(lines,collapse=","),")")))
+    if(length(to_add) >0 ){
+      eval(parse(text=paste0("to_plot<-to_plot+",paste0(to_add, collapse=" + "))))
+    }
+    print(to_plot)   
   }
   if(theme == 'weibull++'){
     xmarks <- pretty(xs)
     if(max(xmarks)> max(xs)){
       extend_xs <- seq(from = max(xs), to = max(xmarks), length.out = 1E2)
       if(lower.tail){
-        #hack to get it working until uniformity on calculation among dists
-        if(x$dist == 'exponential'){
-          extend_ys <- sapply(X=extend_xs, FUN = function(z){calculate(x,'failure',z)$value})
-        }
-        if(x$dist == 'weibull'){
-          extend_ys <- calculate(x,'failure',extend_xs)
-        }
+        extend_ys <- sapply(X=extend_xs, FUN = function(z){calculate(x,'failure',z)$value})
       }else{
-        #hack to get it working until uniformity on calculation among dists
-        if(x$dist == 'exponential'){
-          extend_ys <- sapply(X=extend_xs, FUN = function(z){calculate(x,'reliability',z)$value})
-        }
-        if(x$dist == 'weibull'){
-          extend_ys <- calculate(x,'reliability',extend_xs)
-        } 
+        extend_ys <- sapply(X=extend_xs, FUN = function(z){calculate(x,'reliability',z)$value})
       }
       xs <- c(xs, extend_xs)
       ys <- c(ys, extend_ys)
@@ -372,7 +362,7 @@ plot_pdf <- function(x, theme, ...){
     }
   }
   if(theme == 'ggplot'){
-    plot(xs, ys, type = 'l') 
+    ggplot_theme_line(xs, ys, ...)
   }
   if(theme == 'weibull++'){
     xmarks <- pretty(xs)
@@ -400,27 +390,18 @@ plot_hazard <- function(x, theme, ...){
     plot(xs, ys, type = 'l', ...)  
     if(xmax < par()$usr[2]){
       extend_xs <- seq(from = xmax, to = par()$usr[2], length.out = 5E2)
-      #hack to get it working until uniformity on calculation among dists
-      if(x$dist == 'exponential'){
-        extend_ys <- sapply(X=extend_xs, FUN = function(z){calculate(x,'failure rate',z)$value})
-      }
-      if(x$dist == 'weibull'){
-        extend_ys <- calculate(x,'failure rate',extend_xs)
-      }
+      extend_ys <- sapply(X=extend_xs, FUN = function(z){calculate(x,'failure rate',z)$value})
       lines(extend_xs, extend_ys, ...)
     }
+  }
+  if(theme == 'ggplot'){
+    ggplot_theme_line(xs, ys, ...)
   }
   if(theme == 'weibull++'){
     xmarks <- pretty(xs)
     if(max(xmarks)> xmax){
       extend_xs <- seq(from = max(xs), to = max(xmarks), length.out = 1E2)
-      #hack to get it working until uniformity on calculation among dists
-      if(x$dist == 'exponential'){
-        extend_ys <- sapply(X=extend_xs, FUN = function(z){calculate(x,'failure rate',z)$value})
-      }
-      if(x$dist == 'weibull'){
-        extend_ys <- calculate(x,'failure rate',extend_xs)
-      }
+      extend_ys <- sapply(X=extend_xs, FUN = function(z){calculate(x,'failure rate',z)$value})
       xs <- c(xs, extend_xs)
       ys <- c(ys, extend_ys)
     }
@@ -624,6 +605,25 @@ weibull_theme_plot <- function(x,y,lab1, lab2, lab3){
   par(las = 0, xaxs = 'r', yaxs = 'r', tcl = -0.5, mar = c(5.1, 4.1, 4.1, 2.1), cex.axis = 1, 
       mgp = c(3,1,0), col.axis = 'black', col.lab = 'black', col.main='black', cex.main = 1.2)
 }
+ggplot_theme_line <- function(xs,ys,...){
+  passed_pars <- list(...)
+  to_add <- character()
+  if(any(names(passed_pars) == 'xlab')){
+    to_add <- append(to_add, paste0('xlab("',passed_pars$xlab,'")'))
+  }
+  if(any(names(passed_pars) == 'ylab')){
+    to_add <- append(to_add, paste0('ylab("',passed_pars$ylab,'")'))
+  }
+  if(any(names(passed_pars) == 'col')){
+    to_add <- append(to_add, paste0('geom_line(colour = "',passed_pars$col,'")'))
+  }else{
+    to_add <- append(to_add, paste0('geom_line()'))
+  }
+  base_plot <- ggplot(data = data.frame(x = xs, y = ys), mapping = aes(x = x, y = y))
+  eval(parse(text = paste0('to_plot <- base_plot+', paste0(to_add, collapse=" + "))))
+  print(to_plot) 
+}
+
 
 #' @title Histogram fitted_life_data Objects
 #' 
@@ -886,18 +886,6 @@ calculate.fitted_life_data <- function(x, value, input  = NA, cond_input = NA, a
       #probability of reliability and failure -------------------
       if(value %in% c('reliability', 'failure')){
         to_return <- weibull_calc(x, type = value, input = input, cond_input = cond_input, alpha =alpha)
-        # if(value == 'reliability'){
-        #   use_lower_tail = F
-        # }else{
-        #   use_lower_tail = T
-        # } 
-        # 
-        # if(x$dist == 'exponential'){
-        #   to_return <- pexp(input, 1/x$fit$scale, lower.tail = use_lower_tail)
-        # }
-        # if(x$dist == 'weibull'){
-        #   to_return <- pweibull(input, x$fit$shape, x$fit$scale, lower.tail = use_lower_tail)
-        # }
       }
       #mean life ---------------
       if(value == 'mean life'){
@@ -914,7 +902,7 @@ calculate.fitted_life_data <- function(x, value, input  = NA, cond_input = NA, a
           to_return <- 1/x$fit$scale 
         }
         if(x$dist == 'weibull'){
-          to_return <- x$fit$shape * (input^(x$fit$shape-1)) * ((1/x$fit$scale)^x$fit$shape)
+          to_return <- list(value = x$fit$shape * (input^(x$fit$shape-1)) * ((1/x$fit$scale)^x$fit$shape))
         }       
       }
       #warranty life --------
@@ -926,7 +914,7 @@ calculate.fitted_life_data <- function(x, value, input  = NA, cond_input = NA, a
           to_return <- qweibull(p = input, shape = x$fit$shape, scale = x$fit$scale, lower.tail = F)
         }
       }
-      #warranty life --------
+      #bx life --------
       if(value == 'bx life'){
         if(x$dist == 'exponential'){
           to_return <- qexp(p = input, rate = 1/x$fit$scale)
