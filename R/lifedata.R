@@ -286,32 +286,8 @@ plot_cdfs <- function(x, lower.tail, theme, line_par, point_par, ...){
     do.call(points, c(list(x = pts_xs, y = pts_ys), point_par, list(...)))
   }
   if(theme == 'ggplot'){
-    passed_pars <- list(...)
-    
-    to_add <- character()
-    if(any(names(passed_pars) == 'xlab')){
-      to_add <- append(to_add, paste0('xlab("',passed_pars$xlab,'")'))
-    }
-    if(any(names(passed_pars) == 'ylab')){
-      to_add <- append(to_add, paste0('ylab("',passed_pars$ylab,'")'))
-    }
-    
-    points <- c("data = data.frame(x = pts_xs, y = pts_ys)","mapping = aes(x=x,y=y)")
-    if(any(names(point_par) == 'col')){
-      points <- append(points, paste0("colour='",point_par$col,"'"))
-    }
-    lines <- c("data=data.frame(x=xs,y=ys)","mapping=aes(x=x,y=y)")
-    if(any(names(line_par) == 'col')){
-      lines <- append(lines, paste0("colour='",line_par$col,"'"))
-    }
-    base_plot <- ggplot()
-    eval(parse(text = paste0('to_plot <- base_plot+geom_point(',
-                             paste0(points,collapse=","),
-                             ")+geom_line(",paste0(lines,collapse=","),")")))
-    if(length(to_add) >0 ){
-      eval(parse(text=paste0("to_plot<-to_plot+",paste0(to_add, collapse=" + "))))
-    }
-    print(to_plot)   
+    ggplot_theme_line_and_points(xs=xs,ys=ys,pts_xs=pts_xs,pts_ys=pts_ys,
+                                 line_par=line_par,point_par=point_par,...)
   }
   if(theme == 'weibull++'){
     xmarks <- pretty(xs)
@@ -482,6 +458,54 @@ plot_weibull <- function(x, theme, line_par, point_par, ...){
     do.call(points, c(list(x = pts_xs, y = pts_ys), point_par, list(...)))
     # points(pts_xs, pts_ys, ...)
   }
+  if(theme == 'ggplot'){
+    #point styling
+    if(any(names(point_par) == 'col')){
+      point_colour <- point_par$col
+    }else{
+      point_colour <- 'black'
+    }
+    if(any(names(point_par) == 'fill')){
+      point_fill <- point_par$col
+    }else{
+      point_fill <- 'black'
+    }
+    if(any(names(point_par) == 'cex')){
+      point_size <- point_par$cex
+    }else{
+      point_size <- 1.5
+    }
+    #line styling
+    if(any(names(line_par) == 'lwd')){
+      line_size <- line_par$lwd
+    }else{
+      line_size <- 0.5
+    }
+    if(any(names(line_par) == 'col')){
+      line_colour <- line_par$col
+    }else{
+      line_colour <- 'black'
+    }
+    
+    to_plot <- ggplot()+
+      geom_abline(slope=slope, intercept=intercept, size = line_size, colour = line_colour)+
+      geom_point(data=data.frame(x=pts_xs,y=pts_ys),mapping=aes(x=x,y=y),
+                 fill = point_fill, colour = point_colour, size = point_size)+
+      scale_y_continuous(breaks=y_ats, minor_breaks = y_mini_ats, labels = y_lbs)+
+      scale_x_continuous(breaks=x_ats, minor_breaks = x_mini_ats, labels = x_lbs)
+    to_add <- character(0)
+    par_list <- list(...)
+    if(any(names(par_list) == 'xlab')){
+      to_add <- c(to_add,paste0('xlab("',par_list$xlab,'")'))
+    }
+    if(any(names(par_list) == 'ylab')){
+      to_add <- c(to_add,paste0('ylab("',par_list$ylab,'")'))
+    }
+    if(length(par_list)>0){
+      eval(parse(text = paste0('to_plot <- to_plot + ',paste0(to_add,collapse=" + "))))
+    }
+    print(to_plot)
+  }
   if(theme == 'weibull++'){
     par(las = 1, xaxs = 'i', yaxs = 'i', tcl = 0, mar = c(1.6, 2.2, 1.6, 2.1), cex.axis = 0.5, 
         mgp = c(0.75,0,0), col.axis = 'blue', col.lab = 'red', col.main = 'red', cex.main = 1)
@@ -561,6 +585,54 @@ plot_exponential <- function(x, theme, line_par, point_par, ...){
     do.call(points, c(list(x = pts_xs, y = pts_ys), point_par, list(...)))
     # points(pts_xs, pts_ys, ...)
   }
+  if(theme == 'ggplot'){
+    #point styling
+    if(any(names(point_par) == 'col')){
+      point_colour <- point_par$col
+    }else{
+      point_colour <- 'black'
+    }
+    if(any(names(point_par) == 'fill')){
+      point_fill <- point_par$col
+    }else{
+      point_fill <- 'black'
+    }
+    if(any(names(point_par) == 'cex')){
+      point_size <- point_par$cex
+    }else{
+      point_size <- 1.5
+    }
+    #line styling
+    if(any(names(line_par) == 'lwd')){
+      line_size <- line_par$lwd
+    }else{
+      line_size <- 0.5
+    }
+    if(any(names(line_par) == 'col')){
+      line_colour <- line_par$col
+    }else{
+      line_colour <- 'black'
+    }
+    
+    to_plot <- ggplot()+
+      geom_abline(slope=slope, intercept=intercept, size = line_size, colour = line_colour)+
+      geom_point(data=data.frame(x=pts_xs,y=pts_ys),mapping=aes(x=x,y=y),
+                 fill = point_fill, colour = point_colour, size = point_size)+
+      scale_y_continuous(breaks=y_ats, minor_breaks = y_mini_ats, labels = y_lbs)+
+      scale_x_continuous(breaks=x_ats)
+    to_add <- character(0)
+    par_list <- list(...)
+    if(any(names(par_list) == 'xlab')){
+      to_add <- c(to_add,paste0('xlab("',par_list$xlab,'")'))
+    }
+    if(any(names(par_list) == 'ylab')){
+      to_add <- c(to_add,paste0('ylab("',par_list$ylab,'")'))
+    }
+    if(length(par_list)>0){
+      eval(parse(text = paste0('to_plot <- to_plot + ',paste0(to_add,collapse=" + "))))
+    }
+    print(to_plot)
+  }
   if(theme == 'weibull++'){
     par(las = 1, xaxs = 'i', yaxs = 'i', tcl = 0, mar = c(1.6, 2.2, 1.6, 2.1), cex.axis = 0.5, 
         mgp = c(0.75,0,0), col.axis = 'blue', col.lab = 'red', col.main = 'red', cex.main = 1)
@@ -604,6 +676,34 @@ weibull_theme_plot <- function(x,y,lab1, lab2, lab3){
   lines(x, y, col='blue')
   par(las = 0, xaxs = 'r', yaxs = 'r', tcl = -0.5, mar = c(5.1, 4.1, 4.1, 2.1), cex.axis = 1, 
       mgp = c(3,1,0), col.axis = 'black', col.lab = 'black', col.main='black', cex.main = 1.2)
+}
+ggplot_theme_line_and_points <- function(xs,ys,pts_xs,pts_ys,line_par,point_par,...){
+  passed_pars <- list(...)
+  
+  to_add <- character()
+  if(any(names(passed_pars) == 'xlab')){
+    to_add <- append(to_add, paste0('xlab("',passed_pars$xlab,'")'))
+  }
+  if(any(names(passed_pars) == 'ylab')){
+    to_add <- append(to_add, paste0('ylab("',passed_pars$ylab,'")'))
+  }
+  
+  points <- c("data = data.frame(x = pts_xs, y = pts_ys)","mapping = aes(x=x,y=y)")
+  if(any(names(point_par) == 'col')){
+    points <- append(points, paste0("colour='",point_par$col,"'"))
+  }
+  lines <- c("data=data.frame(x=xs,y=ys)","mapping=aes(x=x,y=y)")
+  if(any(names(line_par) == 'col')){
+    lines <- append(lines, paste0("colour='",line_par$col,"'"))
+  }
+  base_plot <- ggplot()
+  eval(parse(text = paste0('to_plot <- base_plot+geom_point(',
+                           paste0(points,collapse=","),
+                           ")+geom_line(",paste0(lines,collapse=","),")")))
+  if(length(to_add) >0 ){
+    eval(parse(text=paste0("to_plot<-to_plot+",paste0(to_add, collapse=" + "))))
+  }
+  print(to_plot)   
 }
 ggplot_theme_line <- function(xs,ys,...){
   passed_pars <- list(...)
