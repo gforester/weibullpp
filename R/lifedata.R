@@ -983,8 +983,8 @@ calculate.fitted_life_data <- function(x, value, input  = NA, cond_input = NA, a
     if(x$dist == 'exponential'){
       to_return <- exp_calc(x, type = value, input = input, cond_input = cond_input, alpha = alpha)
     }else{
-      #probability of reliability and failure -------------------
-      if(value %in% c('reliability', 'failure')){
+      #weibull calculations completed with bounds
+      if(value %in% c('reliability', 'failure', 'reliable life', 'bx life', 'failure rate')){
         to_return <- weibull_calc(x, type = value, input = input, cond_input = cond_input, alpha =alpha)
       }
       #mean life ---------------
@@ -997,32 +997,14 @@ calculate.fitted_life_data <- function(x, value, input  = NA, cond_input = NA, a
         }  
       }
       #failure rate ------------
-      if(value == 'failure rate'){
-        if(x$dist == 'exponential'){
-          to_return <- 1/x$fit$scale 
-        }
-        if(x$dist == 'weibull'){
-          to_return <- list(value = x$fit$shape * (input^(x$fit$shape-1)) * ((1/x$fit$scale)^x$fit$shape))
-        }       
-      }
-      #warranty life --------
-      if(value == 'reliable life'){
-        if(x$dist == 'exponential'){
-          to_return <- qexp(p = input, rate = 1/x$fit$scale, lower.tail = F)
-        }
-        if(x$dist == 'weibull'){
-          to_return <- qweibull(p = input, shape = x$fit$shape, scale = x$fit$scale, lower.tail = F)
-        }
-      }
-      #bx life --------
-      if(value == 'bx life'){
-        if(x$dist == 'exponential'){
-          to_return <- qexp(p = input, rate = 1/x$fit$scale)
-        }
-        if(x$dist == 'weibull'){
-          to_return <- qweibull(p = input, shape = x$fit$shape, scale = x$fit$scale)
-        }
-      }
+      # if(value == 'failure rate'){
+      #   if(x$dist == 'exponential'){
+      #     to_return <- 1/x$fit$scale 
+      #   }
+      #   if(x$dist == 'weibull'){
+      #     to_return <- list(value = x$fit$shape * (input^(x$fit$shape-1)) * ((1/x$fit$scale)^x$fit$shape))
+      #   }       
+      # }
       #conditional reliability --------
       if(value == 'cond reliab'){
         if(x$dist == 'exponential'){

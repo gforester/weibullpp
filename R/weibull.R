@@ -99,35 +99,42 @@ weibull_calc <- function(fit, type, input = NA, cond_input = NA, alpha = 0.05){
     upper <- max(limits)
     lower <- min(limits)
   }
-  # mean time to failure
-  if(type == 'mean life'){
-    to_return <- scale * gamma(1+(1/shape))
-    delta <- gamma(1+(1/shape))*sqrt(1) + scale*1
-    upper <- scale_upper
-    lower <- scale_lower
-  }
-  # failure rate aka hazard function
+  # # mean time to failure
+  # if(type == 'mean life'){
+  #   to_return <- scale * gamma(1+(1/shape))
+  #   delta <- gamma(1+(1/shape))*sqrt(1) + scale*1
+  #   upper <- scale_upper
+  #   lower <- scale_lower
+  # }
+  # # failure rate aka hazard function
   if(type == 'failure rate'){
-    to_return <- shape * (input^(shape-1)) * ((1/scale)^shape)
-    upper <- 1/scale_lower
-    lower <- 1/scale_upper
+    to_return <- (shape/scale) * ((input/scale)^(shape-1))
+    by_eta <- (shape*to_return/scale) #sans -1 upfront
+    by_beta <- (1/scale)*((input/scale)^(shape-1)) + (shape/scale)*(((input/scale)^(shape-1))*log(input/scale))
+    var_h <- ((by_beta^2)*cov_mat[1,1]) + ((by_eta^2)*cov_mat[2,2]) - (2*by_eta*by_beta*cov_mat[1,2])
+    upper <- to_return+z_star*sqrt(var_h)
+    lower <- to_return-z_star*sqrt(var_h)
   }
   # reliable life aka warranty life and BX% life
   if(type %in% c('reliable life','bx life')){
     lower_tail <- switch(type,'reliable life' = F, 'bx life' = T)
-    to_return <- qexp(p = input, rate = 1/fit$fit$scale, lower.tail = lower_tail)
-    limits <- qexp(p = input, rate = 1/c(scale_upper, scale_lower), lower.tail = lower_tail)
+    to_return <- qweibull(p = input, shape = shape, scale = scale, lower.tail = lower_tail)
+    if(lower_tail){input <- 1-input} #below equation for reliability so switch if failure
+    u <- log(scale) + (log(-1*log(input))/shape)
+    var_u <- (cov_mat[1,1]*((log(-1*log(input)))^2)/(shape^4)) + 
+      (cov_mat[2,2]/(scale^2)) - (2*log(-1*log(input))*cov_mat[1,2]/(scale*(shape^2)))
+    limits <- exp(u+(c(-1,1)*z_star*sqrt(var_u)))
     upper <- max(limits)
     lower <- min(limits)
   }
-  # cond distribution
-  if(type %in% c('cond reliab','cond fail')){
-    lower_tail <- switch(type,'cond reliab' = F, 'cond fail' = T)
-    to_return <- pexp(q = input, rate = 1/fit$fit$scale, lower.tail = lower_tail)
-    limits <- pexp(q = input, rate = 1/c(scale_upper, scale_lower), lower.tail = lower_tail)
-    upper <- max(limits)
-    lower <- min(limits)
-  }
+  # # cond distribution
+  # if(type %in% c('cond reliab','cond fail')){
+  #   lower_tail <- switch(type,'cond reliab' = F, 'cond fail' = T)
+  #   to_return <- pexp(q = input, rate = 1/fit$fit$scale, lower.tail = lower_tail)
+  #   limits <- pexp(q = input, rate = 1/c(scale_upper, scale_lower), lower.tail = lower_tail)
+  #   upper <- max(limits)
+  #   lower <- min(limits)
+  # }
 
   return(list(value = to_return, upper_limit = upper, lower_limit = lower))
 
