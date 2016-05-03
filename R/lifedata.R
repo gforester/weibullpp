@@ -219,8 +219,8 @@ fit_data.lifedata <- function(x, dist = 'weibull', method = 'mle'){
 plot.fitted_life_data <- function(x, type = 'probability', theme = 'base_r', alpha=0.05, 
                                   line_par = NULL, point_par = NULL, ...){
   if(type == 'probability'){
-    if(x$dist == 'weibull') {plot_weibull(x, theme, line_par, point_par, ...)}
-    if(x$dist == 'exponential'){plot_exponential(x,theme, line_par, point_par, ...)}
+    if(x$dist == 'weibull') {plot_weibull(x, theme, alpha, line_par, point_par, ...)}
+    if(x$dist == 'exponential'){plot_exponential(x,theme, alpha, line_par, point_par, ...)}
   }
   if(type == 'failure'){
     plot_cdfs(x, lower.tail = T, theme, alpha, line_par, point_par, ...)
@@ -407,12 +407,12 @@ plot_hazard <- function(x, theme, alpha, ...){
     weibull_theme_plot(xs, ys,uppers, lowers, 'Failure Rate vs. Time', 'Time', 'Failure Rate')
   }
 }
-plot_weibull <- function(x, theme, line_par, point_par, ...){
+plot_weibull <- function(x, theme, alpha, line_par, point_par, ...){
   #only need 2 points for straight line
   xmax <- 10^(ceiling(log10(max(x$data[[1]]))))
   xmin <- 10^(floor(log10(min(x$data[[1]]))))
   xs <- c(xmin,xmax)
-  ys <- pweibull(xs, shape = x$fit$shape, scale = x$fit$scale)  
+  ys <- sapply(X = xs, FUN = function(z){calculate(x,'failure',z,alpha = alpha)$value})
   #make sure xmax isn't so large that ys = 1. this will cause inifinities
   if(ys[2] == 1){
     xs[2] <- qweibull(0.999, shape = x$fit$shape, scale = x$fit$scale)
@@ -475,7 +475,12 @@ plot_weibull <- function(x, theme, line_par, point_par, ...){
     }
     do.call(plot, c(list(x = xs, y = ys, type = 'l', xaxt = 'n', yaxt = 'n'), line_par, to_add, list(...)))
     do.call(abline,c(list(a = intercept, b = slope), line_par))
-    # plot(xs, ys, type = 'l', xaxt = 'n', yaxt = 'n', ...)
+    bound_xs <- seq(from=par()$usr[1], to=par()$usr[2], length.out = 5E2)
+    calc_res <- lapply(X = 10^bound_xs, FUN = function(z){calculate(x,'failure',z,alpha=alpha)})
+    uppers <- sapply(X = calc_res, FUN = function(z){log10(-log(1-z$upper_limit))})
+    lowers <- sapply(X = calc_res, FUN = function(z){log10(-log(1-z$lower_limit))})
+    lines(x=bound_xs, y=uppers, lty = 2)
+    lines(x=bound_xs, y=lowers, lty = 2)
     axis(side = 1, at = x_ats, labels = x_lbs)
     axis(side = 2, at = y_ats, labels = y_lbs)
     do.call(points, c(list(x = pts_xs, y = pts_ys), point_par, list(...)))
@@ -527,6 +532,12 @@ plot_weibull <- function(x, theme, line_par, point_par, ...){
     if(length(par_list)>0){
       eval(parse(text = paste0('to_plot <- to_plot + ',paste0(to_add,collapse=" + "))))
     }
+    bound_xs <- seq(from=par()$usr[1], to=par()$usr[2], length.out = 5E2)
+    calc_res <- lapply(X = 10^bound_xs, FUN = function(z){calculate(x,'failure',z,alpha=alpha)})
+    uppers <- sapply(X = calc_res, FUN = function(z){log10(-log(1-z$upper_limit))})
+    lowers <- sapply(X = calc_res, FUN = function(z){log10(-log(1-z$lower_limit))})
+    to_plot <- to_plot+geom_line(data=data.frame(x=bound_xs,y=uppers),mapping=aes(x=x,y=y),linetype=2)+
+      geom_line(data=data.frame(x=bound_xs,y=lowers),mapping=aes(x=x,y=y),linetype=2)
     print(to_plot)
   }
   if(theme == 'weibull++'){
@@ -543,12 +554,18 @@ plot_weibull <- function(x, theme, line_par, point_par, ...){
     abline(v = x_ats, col = 'red', lwd = 0.5)
     abline(h = y_ats, col = 'red', lwd = 0.5)
     lines(xs, ys, col='blue')
+    bound_xs <- seq(from=par()$usr[1], to=par()$usr[2], length.out = 5E2)
+    calc_res <- lapply(X = 10^bound_xs, FUN = function(z){calculate(x,'failure',z,alpha=alpha)})
+    uppers <- sapply(X = calc_res, FUN = function(z){log10(-log(1-z$upper_limit))})
+    lowers <- sapply(X = calc_res, FUN = function(z){log10(-log(1-z$lower_limit))})
+    lines(x=bound_xs, y=uppers, col='red')
+    lines(x=bound_xs, y=lowers, col='red')
     points(pts_xs, pts_ys, pch = 16, col = 'blue')
     par(las = 0, xaxs = 'r', yaxs = 'r', tcl = -0.5, mar = c(5.1, 4.1, 4.1, 2.1), cex.axis = 1, 
         mgp = c(3,1,0), col.axis = 'black', col.lab = 'black', col.main='black', cex.main = 1.2)
   }
 }
-plot_exponential <- function(x, theme, line_par, point_par, ...){
+plot_exponential <- function(x, theme, alpha, line_par, point_par, ...){
   #get points to plot - needed for y-scaling
   pts_ys <- log(1-median_ranks(x$data))
   pts_xs <- x$data$time[x$data$status == 1]
@@ -601,7 +618,12 @@ plot_exponential <- function(x, theme, line_par, point_par, ...){
     do.call(plot, c(list(x = xs, y = ys, type = 'l', xaxt = 'n', yaxt = 'n', ylim = c(min(y_ats), max(y_ats))),
                     line_par, to_add, list(...)))
     do.call(abline,c(list(a = intercept, b = slope), line_par))
-    # plot(xs, ys, type = 'l', xaxt = 'n', yaxt = 'n', ylim = c(min(y_ats),max(y_ats)), ...)
+    bound_xs <- seq(from=par()$usr[1], to=par()$usr[2], length.out = 5E2)
+    calc_res <- lapply(X = bound_xs, FUN = function(z){calculate(x,'reliability',z,alpha=alpha)})
+    uppers <- sapply(X = calc_res, FUN = function(z){log(z$upper_limit)})
+    lowers <- sapply(X = calc_res, FUN = function(z){log(z$lower_limit)})
+    lines(x=bound_xs, y=uppers, lty = 2)
+    lines(x=bound_xs, y=lowers, lty = 2)
     axis(side = 1, at = x_ats)
     axis(side = 2, at = y_ats, labels = y_lbs)
     axis(side = 2, at = y_mini_ats, labels = F)
@@ -654,6 +676,12 @@ plot_exponential <- function(x, theme, line_par, point_par, ...){
     if(length(par_list)>0){
       eval(parse(text = paste0('to_plot <- to_plot + ',paste0(to_add,collapse=" + "))))
     }
+    bound_xs <- seq(from=par()$usr[1], to=par()$usr[2], length.out = 5E2)
+    calc_res <- lapply(X = bound_xs, FUN = function(z){calculate(x,'reliability',z,alpha=alpha)})
+    uppers <- sapply(X = calc_res, FUN = function(z){log(z$upper_limit)})
+    lowers <- sapply(X = calc_res, FUN = function(z){log(z$lower_limit)})
+    to_plot <- to_plot+geom_line(data=data.frame(x=bound_xs,y=uppers),mapping=aes(x=x,y=y),linetype=2)+
+      geom_line(data=data.frame(x=bound_xs,y=lowers),mapping=aes(x=x,y=y),linetype=2)
     print(to_plot)
   }
   if(theme == 'weibull++'){
@@ -671,6 +699,12 @@ plot_exponential <- function(x, theme, line_par, point_par, ...){
     abline(v = x_ats, col = 'red', lwd = 0.5)
     abline(h = y_ats, col = 'red', lwd = 0.5)
     lines(xs, ys, col='blue')
+    bound_xs <- seq(from=par()$usr[1], to=par()$usr[2], length.out = 5E2)
+    calc_res <- lapply(X = bound_xs, FUN = function(z){calculate(x,'reliability',z,alpha=alpha)})
+    uppers <- sapply(X = calc_res, FUN = function(z){log(z$upper_limit)})
+    lowers <- sapply(X = calc_res, FUN = function(z){log(z$lower_limit)})
+    lines(x=bound_xs, y=uppers, col='red')
+    lines(x=bound_xs, y=lowers, col='red')
     points(pts_xs, pts_ys, pch = 16, col = 'blue', xpd = T)
     par(las = 0, xaxs = 'r', yaxs = 'r', tcl = -0.5, mar = c(5.1, 4.1, 4.1, 2.1), cex.axis = 1, 
         mgp = c(3,1,0), col.axis = 'black', col.lab = 'black', col.main='black', cex.main = 1.2)
