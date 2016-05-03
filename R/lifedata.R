@@ -174,7 +174,7 @@ fit_data.lifedata <- function(x, dist = 'weibull', method = 'mle'){
     gof = "only available when all data complete"
   }
     
-  to_return <- list(data = x, dist = dist, fit = res, std_error = ses, gof = gof)
+  to_return <- list(data = x, dist = dist, method = method, fit = res, std_error = ses, gof = gof)
   class(to_return) <- 'fitted_life_data'
   
   return(to_return)
