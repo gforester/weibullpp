@@ -232,7 +232,7 @@ plot.fitted_life_data <- function(x, type = 'probability', theme = 'base_r', alp
     plot_pdf(x, theme, ...)
   }
   if(type == 'failure rate'){
-    plot_hazard(x, theme, ...)
+    plot_hazard(x, theme, alpha, ...)
   }
 }
 plot_cdfs <- function(x, lower.tail, theme, alpha, line_par, point_par, ...){
@@ -361,35 +361,50 @@ plot_pdf <- function(x, theme, ...){
       xs <- c(xs, extend_xs)
       ys <- c(ys, extend_ys)
     }
-    weibull_theme_plot(xs, ys, 'Probability Density Function', 'Time', 'f(t)')
+    weibull_theme_plot(xs, ys, lab1='Probability Density Function', lab2='Time', lab3='f(t)')
   }
   
 }
-plot_hazard <- function(x, theme, ...){
+plot_hazard <- function(x, theme, alpha, ...){
   xmax <- 1.02 * max(x$data[[1]])
   xs <- seq(from=0, to=xmax, length.out = 5E2)
-  ys <- sapply(X=xs, FUN = function(z){calculate(x,'failure rate',z)$value})
+  calc_res <- lapply(X=xs, FUN = function(z){calculate(x,'failure rate',z,alpha = alpha)})
+  ys <- sapply(X=calc_res, FUN = function(z){z$value})
+  uppers <- sapply(X=calc_res, FUN = function(z){z$upper_limit})
+  lowers <- sapply(X=calc_res, FUN = function(z){z$lower_limit})
   
   if(theme == 'base_r'){
     plot(xs, ys, type = 'l', ...)  
+    lines(xs, uppers, lty = 2)
+    lines(xs, lowers, lty = 2)
     if(xmax < par()$usr[2]){
       extend_xs <- seq(from = xmax, to = par()$usr[2], length.out = 5E2)
-      extend_ys <- sapply(X=extend_xs, FUN = function(z){calculate(x,'failure rate',z)$value})
+      calc_res <- lapply(X=extend_xs, FUN = function(z){calculate(x,'failure rate',z,alpha = alpha)})
+      extend_ys <- sapply(X=calc_res, FUN = function(z){z$value})
+      extend_uppers <- sapply(X=calc_res, FUN = function(z){z$upper_limit})
+      extend_lowers <- sapply(X=calc_res, FUN = function(z){z$lower_limit})
       lines(extend_xs, extend_ys, ...)
+      lines(extend_xs, extend_uppers, lty = 2)
+      lines(extend_xs, extend_lowers, lty = 2)
     }
   }
   if(theme == 'ggplot'){
-    ggplot_theme_line(xs, ys, ...)
+    ggplot_theme_line(xs, ys, us = uppers, ls = lowers,...)
   }
   if(theme == 'weibull++'){
     xmarks <- pretty(xs)
     if(max(xmarks)> xmax){
       extend_xs <- seq(from = max(xs), to = max(xmarks), length.out = 1E2)
-      extend_ys <- sapply(X=extend_xs, FUN = function(z){calculate(x,'failure rate',z)$value})
+      calc_res <- lapply(X=extend_xs, FUN = function(z){calculate(x,'failure rate',z,alpha = alpha)})
+      extend_ys <- sapply(X=calc_res, FUN = function(z){z$value})
+      extend_uppers <- sapply(X=calc_res, FUN = function(z){z$upper_limit})
+      extend_lowers <- sapply(X=calc_res, FUN = function(z){z$lower_limit})
       xs <- c(xs, extend_xs)
       ys <- c(ys, extend_ys)
+      uppers <- c(uppers, extend_uppers)
+      lowers <- c(lowers, extend_lowers)
     }
-    weibull_theme_plot(xs, ys, 'Failure Rate vs. Time', 'Time', 'Failure Rate')
+    weibull_theme_plot(xs, ys,uppers, lowers, 'Failure Rate vs. Time', 'Time', 'Failure Rate')
   }
 }
 plot_weibull <- function(x, theme, line_par, point_par, ...){
@@ -662,7 +677,7 @@ plot_exponential <- function(x, theme, line_par, point_par, ...){
   }
 }
 
-weibull_theme_plot <- function(x,y,u,l,lab1, lab2, lab3){
+weibull_theme_plot <- function(x,y,u=NA,l=NA,lab1, lab2, lab3){
   par(las = 1, xaxs = 'i', yaxs = 'i', tcl = 0, mar = c(1.6, 2.2, 1.6, 2.1), cex.axis = 0.5, 
       mgp = c(0.75,0,0), col.axis = 'blue', col.lab = 'red', col.main = 'red', cex.main = 1)
   xmarks <- pretty(x)
@@ -682,8 +697,10 @@ weibull_theme_plot <- function(x,y,u,l,lab1, lab2, lab3){
   abline(v = xmarks, col = 'red', lwd = 0.5)
   abline(h = ymarks, col = 'red', lwd = 0.5)
   lines(x, y, col='blue')
-  lines(x, u, col='red')
-  lines(x, l, col='red')
+  if(!all(is.na(u))){
+    lines(x, u, col='red')
+    lines(x, l, col='red')    
+  }
   par(las = 0, xaxs = 'r', yaxs = 'r', tcl = -0.5, mar = c(5.1, 4.1, 4.1, 2.1), cex.axis = 1, 
       mgp = c(3,1,0), col.axis = 'black', col.lab = 'black', col.main='black', cex.main = 1.2)
 }
@@ -717,7 +734,7 @@ ggplot_theme_line_and_points <- function(xs,ys,pts_xs,pts_ys,us,ls,line_par,poin
     geom_line(data = data.frame(x=xs,y=ls), mapping=aes(x=x,y=y),linetype=2)
   print(to_plot)   
 }
-ggplot_theme_line <- function(xs,ys,...){
+ggplot_theme_line <- function(xs,ys,us=NA,ls=NA,...){
   passed_pars <- list(...)
   to_add <- character()
   if(any(names(passed_pars) == 'xlab')){
@@ -733,6 +750,10 @@ ggplot_theme_line <- function(xs,ys,...){
   }
   base_plot <- ggplot(data = data.frame(x = xs, y = ys), mapping = aes(x = x, y = y))
   eval(parse(text = paste0('to_plot <- base_plot+', paste0(to_add, collapse=" + "))))
+  if(!all(is.na(us))){
+    to_plot <- to_plot + geom_line(data=data.frame(x=xs,y=us),mapping=aes(x=x,y=y),linetype=2)
+    to_plot <- to_plot + geom_line(data=data.frame(x=xs,y=ls),mapping=aes(x=x,y=y),linetype=2)    
+  }
   print(to_plot) 
 }
 
