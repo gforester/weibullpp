@@ -125,7 +125,7 @@ solve_for_p <- function(N, i, cdf = 0.5){
 #' @seealso \code{\link{median_ranks.lifedata}} \code{\link{optim}}
 #' 
 fit_data.lifedata <- function(x, dist = 'weibull', method = 'mle'){
-  if(!((dist == 'weibull') | (dist == 'exponential'))) stop('dist must be "weibull" or "exponential"')
+  if(! (dist %in% c('weibull','exponential','lognormal') ) ) stop('dist must be "weibull","exponential" or "lognormal"')
   
   if(dist == 'exponential'){
     if(method == 'mle'){
@@ -146,7 +146,8 @@ fit_data.lifedata <- function(x, dist = 'weibull', method = 'mle'){
       pexp(z, 1/res$scale)
     }
     n_params <- 1
-  }else{
+  }
+  if(dist == 'weibull'){
     if(method == 'mle'){
       res <- weibull_mle(x)
     }
@@ -164,7 +165,17 @@ fit_data.lifedata <- function(x, dist = 'weibull', method = 'mle'){
     mle_cdf <- function(z){
       pweibull(z, res$shape, res$scale)
     }
-    n_params <- 2
+    n_params <- 2  
+  }
+  if(dist == 'lognormal'){
+    if(method == 'mle'){
+      res <- lognormal_mle(x)
+    }
+    ses <-lognormal_fisher_ci(res)
+    mle_cdf <- function(z){
+      plnorm(z, res$logmean, res$sdlog)
+    }
+    n_params <- 2 
   }
   
   if(all(x$status==1)){
@@ -1049,7 +1060,8 @@ calculate.fitted_life_data <- function(x, value, input  = NA, cond_input = NA, a
   }else{
     if(x$dist == 'exponential'){
       to_return <- exp_calc(x, type = value, input = input, cond_input = cond_input, alpha = alpha)
-    }else{
+    }
+    if(x$dist == 'weibull'){
       #weibull calculations completed with bounds
       if(value %in% c('reliability', 'failure', 'reliable life', 'bx life', 'failure rate')){
         to_return <- weibull_calc(x, type = value, input = input, cond_input = cond_input, alpha =alpha)
@@ -1094,6 +1106,9 @@ calculate.fitted_life_data <- function(x, value, input  = NA, cond_input = NA, a
           to_return <- num / pweibull(q = cond_input, shape = x$fit$shape, scale = x$fit$scale, lower.tail = F)
         }
       } 
+    }
+    if(x$dist == 'lognormal'){
+      to_return <- lognormal_calc(x, type = value, input = input, cond_input = cond_input, alpha = alpha)
     }
   }
   
