@@ -334,11 +334,16 @@ plot_cdfs <- function(x, lower.tail, theme, alpha, line_par, point_par, ...){
 plot_pdf <- function(x, theme, ...){
   xmax <- 1.02 * max(x$data[[1]])
   xs <- seq(from=0, to=xmax, length.out = 5E2)
+  
+  #I don't like this below, though trival, should be part of calculation section of each distribution
   if(x$dist == 'exponential'){
     ys <- dexp(xs, rate = 1/x$fit$scale)
   }
   if(x$dist == 'weibull'){
     ys <- dweibull(xs, shape = x$fit$shape, scale = x$fit$scale)
+  }
+  if(x$dist == 'lognormal'){
+    ys <- dlnorm(xs,x$fit$logmean,x$fit$sdlog)
   }
   #roll up calculation for future
   
@@ -346,11 +351,15 @@ plot_pdf <- function(x, theme, ...){
     plot(xs, ys, type = 'l', ...)
     if(xmax < par()$usr[2]){
       extend_xs <- seq(from = xmax, to = par()$usr[2], length.out = 5E2)
+      #Another reason i don't like below
       if(x$dist == 'exponential'){
         extend_ys <- dexp(extend_xs, rate = 1/x$fit$scale)
       }
       if(x$dist == 'weibull'){
         extend_ys <- dweibull(extend_xs, shape = x$fit$shape, scale = x$fit$scale)
+      }
+      if(x$dist == 'lognormal'){
+        extend_ys <- dlnorm(extend_xs,x$fit$logmean,x$fit$sdlog)
       }
       #roll up calculation for future
       lines(extend_xs, extend_ys, ...)
@@ -369,6 +378,9 @@ plot_pdf <- function(x, theme, ...){
       if(x$dist == 'weibull'){
         extend_ys <- dweibull(extend_xs, shape = x$fit$shape, scale = x$fit$scale)
       } 
+      if(x$dist == 'lognormal'){
+        extend_ys <- dlnorm(extend_xs,x$fit$logmean,x$fit$sdlog)
+      }
       xs <- c(xs, extend_xs)
       ys <- c(ys, extend_ys)
     }
