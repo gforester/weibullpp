@@ -91,14 +91,17 @@ lognormal_calc <- function(fit, type, input = NA, cond_input = NA, alpha = 0.05)
   }
   # # failure rate aka hazard function
   if(type == 'failure rate'){
-    to_return <- dlnorm(input,logmean,sdlog)/plnorm(input, logmean, sdlog, lower.tail = F)
+    f <- dlnorm(input,logmean,sdlog)
+    R <- plnorm(input, logmean, sdlog, lower.tail = F)
+    to_return <- f/R
     z <- (log(input)-logmean)/sdlog
-    var_R <- var_z <- ( cov_mat[1,1] + ((z^2)*cov_mat[2,2]) + (2*z*cov_mat[1,2]) )/(sdlog^2)
-    # by_eta <- (shape*to_return/scale) #sans -1 upfront
-    # by_beta <- (1/scale)*((input/scale)^(shape-1)) + (shape/scale)*(((input/scale)^(shape-1))*log(input/scale))
-    # var_h <- ((by_beta^2)*cov_mat[1,1]) + ((by_eta^2)*cov_mat[2,2]) - (2*by_eta*by_beta*cov_mat[1,2])
-    # upper <- to_return+z_star*sqrt(var_h)
-    # lower <- to_return-z_star*sqrt(var_h)
+    var_z <- ( cov_mat[1,1] + ((z^2)*cov_mat[2,2]) + (2*z*cov_mat[1,2]) )/(sdlog^2)
+    var_R <- var_z * exp(-z^2) / (2*pi)
+    var_f <- var_z * z^2 * f^2
+    var_h <- (to_return^2)*((var_f/f^2)+(var_R/R^2))
+    # NOTE: this is a great simplication - covariance term removed
+    upper <- to_return+z_star*sqrt(var_h)
+    lower <- to_return-z_star*sqrt(var_h)
   }
   # reliable life aka warranty life and BX% life
   if(type %in% c('reliable life','bx life')){
@@ -113,11 +116,20 @@ lognormal_calc <- function(fit, type, input = NA, cond_input = NA, alpha = 0.05)
   # # cond distribution
   if(type %in% c('cond reliab','cond fail')){
     lower_tail <- switch(type,'cond reliab' = F, 'cond fail' = T)
-    to_return <- plnorm(input+cond_input, logmean, sdlog, lower.tail = lower_tail) / 
-      plnorm(cond_input, logmean, sdlog,lower.tail = F)
+    num <- plnorm(input+cond_input, logmean, sdlog, lower.tail = lower_tail)
+    den <- plnorm(cond_input, logmean, sdlog,lower.tail = F)
+    to_return <-  num / den 
+    z <- (log(cond_input+input)-logmean)/sdlog
+    var_z <- ( cov_mat[1,1] + ((z^2)*cov_mat[2,2]) + (2*z*cov_mat[1,2]) )/(sdlog^2)
+    var_num <- var_z * exp(-z^2) / (2*pi)
+    z <- (log(cond_input)-logmean)/sdlog
+    var_z <- ( cov_mat[1,1] + ((z^2)*cov_mat[2,2]) + (2*z*cov_mat[1,2]) )/(sdlog^2)
+    var_den <- var_z * exp(-z^2) / (2*pi)
+    var_cond <-  (to_return^2)*((var_num/num^2)+(var_den/den^2))
   #   limits <- pexp(q = input, rate = 1/c(scale_upper, scale_lower), lower.tail = lower_tail)
-  #   upper <- max(limits)
-  #   lower <- min(limits)
+    # NOTE: this is a great simplication - covariance term removed
+    upper <- to_return+z_star*sqrt(var_cond)
+    lower <- to_return-z_star*sqrt(var_cond)
   }
   
   return(list(value = to_return, upper_limit = upper, lower_limit = lower))
