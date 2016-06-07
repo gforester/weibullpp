@@ -137,71 +137,84 @@ lognormal_calc <- function(fit, type, input = NA, cond_input = NA, alpha = 0.05)
 }
 
 # linearized plot --------------
-# plot_lognormal <- function(x, theme, alpha, line_par, point_par, ...){
-#   #get points to plot - needed for y-scaling
-#   pts_ys <- log(median_ranks(x$data))
-#   pts_xs <- log(x$data$time[x$data$status == 1])
-#   
-#   #find x-range of plot
-#   x_ats <- pretty(x$data$time)
-#   if(min(x_ats) > min(x$data$time)){
-#     x_ats <- c(min(x_ats) - diff(x_ats)[1] , x_ats)
-#   }
-#   if(max(x_ats) < max(x$data$time)){
-#     x_ats <- c(x_ats, max(x_ats) + diff(x_ats)[1])
-#   }
-#   x_mini_ats <- pretty(x_ats[1:2])
-#   x_mini_ats <- seq(from = x_mini_ats[1], to = x_ats[length(x_ats)],by = diff(x_mini_ats)[1])
-#   x_mini_ats <- x_mini_ats[!(x_mini_ats %in% x_ats)]
-#   
-#   #only need 2 points for straight line to get equation
-#   xs <- c( x_ats[1], x_ats[length(x_ats)] )
-#   rs <- 1-pexp(xs, rate = 1/x$fit$scale)
-#   ys <- log(rs)
-#   slope <- diff(ys)/diff(xs)
-#   intercept <- ys[1]-slope*xs[1]
-#   
-#   #y_scale
-#   pts_y_range <- range(exp(pts_ys))
-#   ymin <- floor(log10(min(c(rs[2],pts_y_range[1]))))
-#   ymax <- ceiling(log10(max(c(rs[1],pts_y_range[2]))))
-#   # if(ymax == 0) ymax = -1
-#   y_lbs <- c(10^(ymin:ymax))
-#   y_ats <- log(y_lbs)
+# x is log base e of times
+# y is inverse standard normal CDF of F(t) estimates
+# axes will be marked as in log base 10
+plot_lognormal <- function(x, theme, alpha, line_par, point_par, ...){
+  #get points to plot - needed for y-scaling
+  pts_ys <- qnorm((median_ranks(x$data)))
+  pts_xs <- log(x$data$time[x$data$status == 1])
+
+  # find x-range of plot
+  # lowest of powers of 10 down.
+  # weibull++ is set to 0, this is weird?
+  min_power <- floor(log10(min(x$data$time)))
+  max_power <- ceiling(log10(max(x$data$time)))
+  x_lbs <- 10^(min_power:max_power)
+  x_ats <- log( x_lbs )
+  x_mini_lbs <- sapply(X = x_lbs, FUN = function(y) y*2:9)
+  x_mini_ats <- log(x_mini_lbs)
+
+  #calculate a-b line of fitted distribution
+  slope <- 1 / x$fit$sdlog
+  intercept <- -x$fit$logmean / x$fit$sdlog 
+  
+  #y_scale
+  # cat(median_ranks(x$data),'\n')
+  # cat(pts_ys, '\n')
+  pts_y_cdf_range <- range(pnorm(pts_ys))
+  ymin <- floor(log10(pts_y_cdf_range[1]))
+  ymax <- ceiling(log10(pts_y_cdf_range[2]))
+  if(ymax == 0) ymax = -1
+  y_lbs <- c(10^(ymin:ymax))
+  y_lbs <- c(y_lbs, 1 - y_lbs) #max should be at 1-lowest tick mark
+  y_ats <- qnorm(y_lbs)
 #   y_mini_lbs <- 10^unlist(lapply(X = y_lbs[-length(y_lbs)], FUN = function(y) log10(y)+log10(2:9)))
 #   y_mini_ats <- log(y_mini_lbs)
-#   
-#   
-#   if(theme == 'base_r'){
-#     to_add = list(xlab = 'Time', ylab = 'Probability')
-#     to_add$main = 'Reliability'
-#     if(any(names(list(...)) == 'xlab')){
-#       to_add$xlab = NULL
-#     }
-#     if(any(names(list(...)) == 'ylab')){
-#       to_add$ylab = NULL
-#     }
-#     if(any(names(list(...)) == 'main')){
-#       to_add$main = NULL
-#     }
-#     if(length(to_add) == 0){
-#       to_add = NULL
-#     }
-#     do.call(plot, c(list(x = xs, y = ys, type = 'l', xaxt = 'n', yaxt = 'n', ylim = c(min(y_ats), max(y_ats))),
-#                     line_par, to_add, list(...)))
-#     do.call(abline,c(list(a = intercept, b = slope), line_par))
-#     bound_xs <- seq(from=par()$usr[1], to=par()$usr[2], length.out = 5E2)
-#     calc_res <- lapply(X = bound_xs, FUN = function(z){calculate(x,'reliability',z,alpha=alpha)})
-#     uppers <- sapply(X = calc_res, FUN = function(z){log(z$upper_limit)})
-#     lowers <- sapply(X = calc_res, FUN = function(z){log(z$lower_limit)})
-#     lines(x=bound_xs, y=uppers, lty = 2)
-#     lines(x=bound_xs, y=lowers, lty = 2)
-#     axis(side = 1, at = x_ats)
-#     axis(side = 2, at = y_ats, labels = y_lbs)
-#     axis(side = 2, at = y_mini_ats, labels = F)
-#     do.call(points, c(list(x = pts_xs, y = pts_ys), point_par, list(...)))
-#     # points(pts_xs, pts_ys, ...)
-#   }
+  
+  
+  if(theme == 'base_r'){
+    to_add = list(xlab = 'Time', ylab = 'Probability')
+    to_add$main = 'Unreliability'
+    to_add$ylim = range(y_ats)
+    to_add$xlim = range(x_ats)
+    if(any(log(x$data$time) == to_add$xlim[2])){
+      to_add$xlim[2] = to_add$xlim[2] + 0.04*diff(range(x_ats))
+    }
+    more_pars = list(...)
+    if(any(names(list(...)) == 'xlab')){
+      to_add$xlab = NULL
+    }
+    if(any(names(list(...)) == 'ylab')){
+      to_add$ylab = NULL
+    }
+    if(any(names(list(...)) == 'main')){
+      to_add$main = NULL
+    }
+    if(any(names(list(...)) == 'xlim')){
+      to_add$xlim = NULL
+      more_pars$xlim = log(more_pars$xlim)
+    }
+    if(any(names(list(...)) == 'ylim')){
+      to_add$ylim = NULL
+    }
+    if(length(to_add) == 0){
+      to_add = NULL
+    }
+    do.call(plot, c(list(x = pts_xs, y = pts_ys, type = 'l', xaxt = 'n', yaxt = 'n', xaxs = 'i', yaxs = 'i'),
+                    line_par, to_add, more_pars))
+    do.call(abline,c(list(a = intercept, b = slope), line_par))
+    # bound_xs <- seq(from=par()$usr[1], to=par()$usr[2], length.out = 5E2)
+    # calc_res <- lapply(X = bound_xs, FUN = function(z){calculate(x,'reliability',z,alpha=alpha)})
+    # uppers <- sapply(X = calc_res, FUN = function(z){log(z$upper_limit)})
+    # lowers <- sapply(X = calc_res, FUN = function(z){log(z$lower_limit)})
+    # lines(x=bound_xs, y=uppers, lty = 2)
+    # lines(x=bound_xs, y=lowers, lty = 2)
+    axis(side = 1, at = x_ats, labels = x_lbs)
+    axis(side = 2, at = y_ats, labels = y_lbs)
+    # axis(side = 2, at = y_mini_ats, labels = F)
+    do.call(points, c(list(x = pts_xs, y = pts_ys), point_par, more_pars))
+  }
 #   if(theme == 'ggplot'){
 #     #point styling
 #     if(any(names(point_par) == 'col')){
@@ -256,31 +269,35 @@ lognormal_calc <- function(fit, type, input = NA, cond_input = NA, alpha = 0.05)
 #       geom_line(data=data.frame(x=bound_xs,y=lowers),mapping=aes(x=x,y=y),linetype=2)
 #     print(to_plot)
 #   }
-#   if(theme == 'weibull++'){
-#     par(las = 1, xaxs = 'i', yaxs = 'i', tcl = 0, mar = c(1.6, 2.2, 1.6, 2.1), cex.axis = 0.5, 
-#         mgp = c(0.75,0,0), col.axis = 'blue', col.lab = 'red', col.main = 'red', cex.main = 1)
-#     plot(xs, ys, type = 'l', xaxt = 'n', yaxt = 'n', ann = F, col='blue',
-#          ylim = c(min(y_ats),max(y_ats)))
-#     axis(side = 1, at = x_ats, lwd = 0, line = -0.4)
-#     axis(side = 2, at = y_ats, labels = y_lbs, lwd = 0, line = 0.1)
-#     title(ylab='Reliability', line = 1.25)
-#     title(xlab='Time', line = 0.5)
-#     title(main='Probability - Exponential', line =0.5)
-#     abline(v = x_mini_ats, col = 'green',lwd= 0.5)
+  if(theme == 'weibull++'){
+    par(las = 1, xaxs = 'i', yaxs = 'i', tcl = 0, mar = c(1.6, 2.2, 1.6, 2.1), cex.axis = 0.5, 
+        mgp = c(0.75,0,0), col.axis = 'blue', col.lab = 'red', col.main = 'red', cex.main = 1)
+    to_add_xlim = range(x_ats)
+    if(any(log(x$data$time) == to_add_xlim[2])){
+      to_add_xlim[2] = to_add_xlim[2] + 0.04*diff(range(x_ats))
+    }
+    plot(pts_xs, pts_ys, xaxt = 'n', yaxt = 'n', ann = F, col='blue',pch = 16,xlim = to_add_xlim,
+         ylim = c(min(y_ats),max(y_ats)))
+    axis(side = 1, at = x_ats, labels = x_lbs, lwd = 0, line = -0.4)
+    axis(side = 2, at = y_ats, labels = y_lbs, lwd = 0, line = 0.1)
+    title(ylab='Unreliability', line = 1.25)
+    title(xlab='Time', line = 0.5)
+    title(main='Probability - Lognormal', line =0.5)
+    abline(v = x_mini_ats, col = 'green',lwd= 0.5)
 #     abline(h = y_mini_ats, col = 'green',lwd= 0.5)
-#     abline(v = x_ats, col = 'red', lwd = 0.5)
-#     abline(h = y_ats, col = 'red', lwd = 0.5)
-#     lines(xs, ys, col='blue')
+    abline(v = x_ats, col = 'red', lwd = 0.5)
+    abline(h = y_ats, col = 'red', lwd = 0.5)
+    abline(intercept, slope, col='blue')
 #     bound_xs <- seq(from=par()$usr[1], to=par()$usr[2], length.out = 5E2)
 #     calc_res <- lapply(X = bound_xs, FUN = function(z){calculate(x,'reliability',z,alpha=alpha)})
 #     uppers <- sapply(X = calc_res, FUN = function(z){log(z$upper_limit)})
 #     lowers <- sapply(X = calc_res, FUN = function(z){log(z$lower_limit)})
 #     lines(x=bound_xs, y=uppers, col='red')
 #     lines(x=bound_xs, y=lowers, col='red')
-#     points(pts_xs, pts_ys, pch = 16, col = 'blue', xpd = T)
-#     par(las = 0, xaxs = 'r', yaxs = 'r', tcl = -0.5, mar = c(5.1, 4.1, 4.1, 2.1), cex.axis = 1, 
-#         mgp = c(3,1,0), col.axis = 'black', col.lab = 'black', col.main='black', cex.main = 1.2)
-#   }
-# }
-# 
-# 
+    # points(pts_xs, pts_ys, pch = 16, col = 'blue', xpd = T)
+    par(las = 0, xaxs = 'r', yaxs = 'r', tcl = -0.5, mar = c(5.1, 4.1, 4.1, 2.1), cex.axis = 1, 
+        mgp = c(3,1,0), col.axis = 'black', col.lab = 'black', col.main='black', cex.main = 1.2)
+  }
+}
+
+

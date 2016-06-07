@@ -232,6 +232,7 @@ plot.fitted_life_data <- function(x, type = 'probability', theme = 'base_r', alp
   if(type == 'probability'){
     if(x$dist == 'weibull') {plot_weibull(x, theme, alpha, line_par, point_par, ...)}
     if(x$dist == 'exponential'){plot_exponential(x,theme, alpha, line_par, point_par, ...)}
+    if(x$dist == 'lognormal'){plot_lognormal(x,theme, alpha, line_par, point_par, ...)}
   }
   if(type == 'failure'){
     plot_cdfs(x, lower.tail = T, theme, alpha, line_par, point_par, ...)
