@@ -28,6 +28,19 @@ lognormal_ld_like <- function(theta, lifedata_object){
   return(full_like + cens_like)
 }
 
+
+#  wrapper for likelihood calculation - for rank regression ---------------
+
+lognormal_ld_like_any <- function(theta, lifedata_object){
+  if(sum(lifedata_object[[2]])==length(lifedata_object[[2]])){
+    ret_value <- lognormal_ld_like_complete(theta, lifedata_object)
+  }else{
+    ret_value <- lognormal_ld_like(theta,lifedata_object)
+  }
+  return(ret_value)
+}
+
+
 # MLE --------------
 #use Nelder-Mead default in R
 #assume the_data a lifedata object
@@ -301,3 +314,36 @@ get_plot_bounds <- function(x,alpha){
   return(list(log(bound_xs),uppers,lowers))
 }
 
+# rank regression -----------
+lognormal_rr <- function(x){
+  
+  #get median ranks estimate of probability of failure
+  ts <- x$time[x$status == 1]
+  ps <- median_ranks(x)
+  
+  #linearize
+  ys <- qnorm(ps)
+  xs <- log(ts)
+  
+  #est slope-intercept (b-a)
+  rho <- cor(xs,ys)
+  sdx <- sd(xs)
+  sdy <- sd(ys)
+  b_y <- rho*sdy/sdx
+  b_x <- rho*sdx/sdy
+  a_y <- mean(ys)-b_y*mean(xs)
+  a_x <- mean(xs)-b_x*mean(ys)
+  
+  #est logmean and sdlog
+  logmean_rry <- -a_y/b_y
+  logmean_rrx <- a_x
+  sdlog_rry <- 1/b_y
+  sdlog_rrx <- b_x
+  
+  return(list(logmean_rry = logmean_rry, logmean_rrx = logmean_rrx, 
+              sdlog_rry = sdlog_rry, sdlog_rrx = sdlog_rrx,
+              log_like_rry = lognormal_ld_like_any(c(logmean_rry, sdlog_rry),x),
+              log_like_rrx = lognormal_ld_like_any(c(logmean_rrx, sdlog_rrx),x),
+              rho = rho))
+  
+}

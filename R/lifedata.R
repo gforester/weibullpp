@@ -171,6 +171,16 @@ fit_data.lifedata <- function(x, dist = 'weibull', method = 'mle'){
     if(method == 'mle'){
       res <- lognormal_mle(x)
     }
+    if((method == 'rrx') | (method == 'rry')){
+      res <- lognormal_rr(x)
+      if(method == 'rry'){
+        res <- list(logmean = res$logmean_rry, sdlog = res$sdlog_rry, log_like = res$log_like_rry)
+      }else{
+        res <- list(logmean = res$logmean_rrx, sdlog = res$sdlog_rrx, log_like = res$log_like_rrx)
+      }
+      res$hessian <- -1 * optimHess(par = c(res$logmean, res$sdlog), fn = function(th, the_data) -1*lognormal_ld_like_any(th, the_data), 
+                                    the_data = x)
+    }
     ses <-lognormal_fisher_ci(res)
     mle_cdf <- function(z){
       plnorm(z, res$logmean, res$sdlog)
