@@ -24,6 +24,33 @@ print.lifedata <- function(x){
   print(paste0(x[[1]],pos_or_not), quote = F)
 }
 
+
+estimate_ranks <- function(x, method = 'median_ranks'){
+  if(!method %in% c('median_ranks','kaplan-meier','modified_kaplan-meier')){
+    warning("Method uknown; defaulting to median_ranks")
+    method = 'median_ranks'
+  }
+  if(method == 'median_ranks'){
+    to_ret <- median_ranks(x)
+  }else{
+    times <- Surv(x[[1]],x[[2]])
+    fit <- survfit(times ~ 1)
+    xs <- fit$time
+    if(method == 'kaplan-meier'){
+      survs <- fit$surv
+    }
+    if(method == 'modified_kaplan-meier'){
+      survs <- head(filter(c(1,fit$surv),c(0.5,0.5)),-1)
+    }
+    idx <- match(x[[1]][x[[2]]==1],fit$time)
+    idx <- idx[!is.na(idx)]
+    to_ret <- 1 - survs[idx]
+  }
+  return(to_ret)
+}
+
+
+
 #' @title Calculate Median Ranks
 #' 
 #' @description 
@@ -124,8 +151,10 @@ solve_for_p <- function(N, i, cdf = 0.5){
 #' 
 #' @seealso \code{\link{median_ranks.lifedata}} \code{\link{optim}}
 #' 
-fit_data.lifedata <- function(x, dist = 'weibull', method = 'mle'){
+fit_data.lifedata <- function(x, dist = 'weibull', method = 'mle', rank_method = 'median_ranks'){
   if(! (dist %in% c('weibull','exponential','lognormal') ) ) stop('dist must be "weibull","exponential" or "lognormal"')
+  
+  mrs <- estimate_ranks(x,rank_method)
   
   if(dist == 'exponential'){
     if(method == 'mle'){
@@ -134,7 +163,7 @@ fit_data.lifedata <- function(x, dist = 'weibull', method = 'mle'){
       res <- list(scale = res$scale, log_like = res$log_like)  
     }
     if((method == 'rrx') | (method == 'rry')){
-      res <- exp_rr(x)
+      res <- exp_rr(x, mrs)
       if(method == 'rry'){
         res <- list(scale = res$scale_rry, log_like = res$log_like_rry)
       }else{
@@ -152,7 +181,7 @@ fit_data.lifedata <- function(x, dist = 'weibull', method = 'mle'){
       res <- weibull_mle(x)
     }
     if((method == 'rrx') | (method == 'rry')){
-      res <- weibull_rr(x)
+      res <- weibull_rr(x, mrs)
       if(method == 'rry'){
         res <- list(shape = res$shape_rry, scale = res$scale_rry, log_like = res$log_like_rry)
       }else{
@@ -172,7 +201,7 @@ fit_data.lifedata <- function(x, dist = 'weibull', method = 'mle'){
       res <- lognormal_mle(x)
     }
     if((method == 'rrx') | (method == 'rry')){
-      res <- lognormal_rr(x)
+      res <- lognormal_rr(x, mrs)
       if(method == 'rry'){
         res <- list(logmean = res$logmean_rry, sdlog = res$sdlog_rry, log_like = res$log_like_rry)
       }else{
@@ -195,7 +224,7 @@ fit_data.lifedata <- function(x, dist = 'weibull', method = 'mle'){
     gof = "only available when all data complete"
   }
     
-  to_return <- list(data = x, dist = dist, method = method, fit = res, std_error = ses, gof = gof)
+  to_return <- list(data = x, ranks = mrs, dist = dist, method = method, fit = res, std_error = ses, gof = gof)
   class(to_return) <- 'fitted_life_data'
   
   return(to_return)
@@ -272,7 +301,7 @@ plot_cdfs <- function(x, lower.tail, theme, alpha, line_par, point_par, ...){
   lowers <- sapply(X = calc_res, FUN = function(z){z$lower_limit})
 
   #get points to plot
-  pts_ys <- median_ranks(x$data)
+  pts_ys <- x$ranks
   if(!lower.tail) pts_ys <- 1 - pts_ys
   pts_xs <- x$data$time[x$data$status == 1]
     
@@ -490,7 +519,8 @@ plot_weibull <- function(x, theme, alpha, line_par, point_par, ...){
   intercept <- ys[1]-slope*xs[1]
   
   #get points to plot
-  pts_ys <- log10(-log(1-median_ranks(x$data)))
+  pts_ys <- log10(-log(1-(x$ranks)))
+  ys[is.infinite(ys)] <- NA
   pts_xs <- log10(x$data$time[x$data$status == 1])
   
   if(theme == 'base_r'){
@@ -601,7 +631,7 @@ plot_weibull <- function(x, theme, alpha, line_par, point_par, ...){
 }
 plot_exponential <- function(x, theme, alpha, line_par, point_par, ...){
   #get points to plot - needed for y-scaling
-  pts_ys <- log(1-median_ranks(x$data))
+  pts_ys <- log(1-(x$ranks))
   pts_xs <- x$data$time[x$data$status == 1]
   
   #find x-range of plot

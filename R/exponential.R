@@ -32,10 +32,10 @@ exp_se <- function(mle,N){
 }
 
 #rank regression
-exp_rr <- function(x){
+exp_rr <- function(x, mrs){
   #get median ranks estimate of probability of failure
   xs <- x$time[x$status == 1]
-  ps <- median_ranks(x)
+  ps <- mrs
   
   #linearize
   ys <- log(1-ps)

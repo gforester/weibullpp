@@ -39,15 +39,18 @@ weibull_hessian <- function(x, shape, scale){
 }
 
 #rank regression
-weibull_rr <- function(x){
+weibull_rr <- function(x, mrs){
   
   #get median ranks estimate of probability of failure
   ts <- x$time[x$status == 1]
-  ps <- median_ranks(x)
+  ps <- mrs
   
   #linearize
   ys <- log10(-log(1-ps))
   xs <- log10(ts)
+  to_remove <- !is.infinite(ys)
+  ys <- ys[to_remove]
+  xs <- xs[to_remove]
   
   #est slope-intercept (b-a)
   rho <- cor(xs,ys)

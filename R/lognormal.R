@@ -155,7 +155,7 @@ lognormal_calc <- function(fit, type, input = NA, cond_input = NA, alpha = 0.05)
 # axes will be marked as in log base 10
 plot_lognormal <- function(x, theme, alpha, line_par, point_par, ...){
   #get points to plot - needed for y-scaling
-  pts_ys <- qnorm((median_ranks(x$data)))
+  pts_ys <- qnorm(x$ranks)
   pts_xs <- log(x$data$time[x$data$status == 1])
 
   # find x-range of plot
@@ -315,15 +315,17 @@ get_plot_bounds <- function(x,alpha){
 }
 
 # rank regression -----------
-lognormal_rr <- function(x){
+lognormal_rr <- function(x, mrs){
   
   #get median ranks estimate of probability of failure
   ts <- x$time[x$status == 1]
-  ps <- median_ranks(x)
+  ps <- mrs
   
   #linearize
   ys <- qnorm(ps)
-  xs <- log(ts)
+  to_remove <- !is.infinite(ys)
+  ys <- ys[to_remove]
+  xs <- log(ts)[to_remove]
   
   #est slope-intercept (b-a)
   rho <- cor(xs,ys)
