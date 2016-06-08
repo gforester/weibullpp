@@ -160,18 +160,15 @@ plot_lognormal <- function(x, theme, alpha, line_par, point_par, ...){
   intercept <- -x$fit$logmean / x$fit$sdlog 
   
   #y_scale
-  # cat(median_ranks(x$data),'\n')
-  # cat(pts_ys, '\n')
   pts_y_cdf_range <- range(pnorm(pts_ys))
   ymin <- floor(log10(pts_y_cdf_range[1]))
   ymax <- ceiling(log10(pts_y_cdf_range[2]))
   if(ymax == 0) ymax = -1
-  y_lbs <- c(10^(ymin:ymax))
-  y_lbs <- c(y_lbs, 1 - y_lbs) #max should be at 1-lowest tick mark
+  y_lbs_lows <- c(10^(ymin:ymax))
+  y_lbs <- c(y_lbs_lows, 1 - y_lbs_lows) #max should be at 1-lowest tick mark
   y_ats <- qnorm(y_lbs)
-#   y_mini_lbs <- 10^unlist(lapply(X = y_lbs[-length(y_lbs)], FUN = function(y) log10(y)+log10(2:9)))
-#   y_mini_ats <- log(y_mini_lbs)
-  
+  y_mini_lbs <- unlist(lapply(X = y_lbs_lows, FUN = function(x) x*(2:9)))
+  y_mini_ats <- qnorm(y_mini_lbs)
   
   if(theme == 'base_r'){
     to_add = list(xlab = 'Time', ylab = 'Probability')
@@ -201,74 +198,73 @@ plot_lognormal <- function(x, theme, alpha, line_par, point_par, ...){
     if(length(to_add) == 0){
       to_add = NULL
     }
-    do.call(plot, c(list(x = pts_xs, y = pts_ys, type = 'l', xaxt = 'n', yaxt = 'n', xaxs = 'i', yaxs = 'i'),
+    do.call(plot, c(list(x = pts_xs, y = pts_ys, xaxt = 'n', yaxt = 'n', xaxs = 'i', yaxs = 'i'),
                     line_par, to_add, more_pars))
+    #straight line of theoretical model
     do.call(abline,c(list(a = intercept, b = slope), line_par))
-    # bound_xs <- seq(from=par()$usr[1], to=par()$usr[2], length.out = 5E2)
-    # calc_res <- lapply(X = bound_xs, FUN = function(z){calculate(x,'reliability',z,alpha=alpha)})
-    # uppers <- sapply(X = calc_res, FUN = function(z){log(z$upper_limit)})
-    # lowers <- sapply(X = calc_res, FUN = function(z){log(z$lower_limit)})
-    # lines(x=bound_xs, y=uppers, lty = 2)
-    # lines(x=bound_xs, y=lowers, lty = 2)
+    #error bounds
+    bnds <- get_plot_bounds(x,alpha)
+    lines(x = bnds[[1]], y = bnds[[2]], lty = 2)
+    lines(x = bnds[[1]], y = bnds[[3]], lty = 2)
+    #grid lines
     axis(side = 1, at = x_ats, labels = x_lbs)
     axis(side = 2, at = y_ats, labels = y_lbs)
-    # axis(side = 2, at = y_mini_ats, labels = F)
+    axis(side = 1, at = x_mini_ats, labels = F)
+    axis(side = 2, at = y_mini_ats, labels = F)
+    #points as top layer
     do.call(points, c(list(x = pts_xs, y = pts_ys), point_par, more_pars))
   }
-#   if(theme == 'ggplot'){
-#     #point styling
-#     if(any(names(point_par) == 'col')){
-#       point_colour <- point_par$col
-#     }else{
-#       point_colour <- 'black'
-#     }
-#     if(any(names(point_par) == 'fill')){
-#       point_fill <- point_par$col
-#     }else{
-#       point_fill <- 'black'
-#     }
-#     if(any(names(point_par) == 'cex')){
-#       point_size <- point_par$cex
-#     }else{
-#       point_size <- 1.5
-#     }
-#     #line styling
-#     if(any(names(line_par) == 'lwd')){
-#       line_size <- line_par$lwd
-#     }else{
-#       line_size <- 0.5
-#     }
-#     if(any(names(line_par) == 'col')){
-#       line_colour <- line_par$col
-#     }else{
-#       line_colour <- 'black'
-#     }
-#     
-#     to_plot <- ggplot()+
-#       geom_abline(slope=slope, intercept=intercept, size = line_size, colour = line_colour)+
-#       geom_point(data=data.frame(x=pts_xs,y=pts_ys),mapping=aes(x=x,y=y),
-#                  fill = point_fill, colour = point_colour, size = point_size)+
-#       scale_y_continuous(breaks=y_ats, minor_breaks = y_mini_ats, labels = y_lbs)+
-#       scale_x_continuous(breaks=x_ats)
-#     to_add <- character(0)
-#     par_list <- list(...)
-#     if(any(names(par_list) == 'xlab')){
-#       to_add <- c(to_add,paste0('xlab("',par_list$xlab,'")'))
-#     }
-#     if(any(names(par_list) == 'ylab')){
-#       to_add <- c(to_add,paste0('ylab("',par_list$ylab,'")'))
-#     }
-#     if(length(par_list)>0){
-#       eval(parse(text = paste0('to_plot <- to_plot + ',paste0(to_add,collapse=" + "))))
-#     }
-#     bound_xs <- seq(from=par()$usr[1], to=par()$usr[2], length.out = 5E2)
-#     calc_res <- lapply(X = bound_xs, FUN = function(z){calculate(x,'reliability',z,alpha=alpha)})
-#     uppers <- sapply(X = calc_res, FUN = function(z){log(z$upper_limit)})
-#     lowers <- sapply(X = calc_res, FUN = function(z){log(z$lower_limit)})
-#     to_plot <- to_plot+geom_line(data=data.frame(x=bound_xs,y=uppers),mapping=aes(x=x,y=y),linetype=2)+
-#       geom_line(data=data.frame(x=bound_xs,y=lowers),mapping=aes(x=x,y=y),linetype=2)
-#     print(to_plot)
-#   }
+  if(theme == 'ggplot'){
+    #point styling
+    if(any(names(point_par) == 'col')){
+      point_colour <- point_par$col
+    }else{
+      point_colour <- 'black'
+    }
+    if(any(names(point_par) == 'fill')){
+      point_fill <- point_par$col
+    }else{
+      point_fill <- 'black'
+    }
+    if(any(names(point_par) == 'cex')){
+      point_size <- point_par$cex
+    }else{
+      point_size <- 1.5
+    }
+    #line styling
+    if(any(names(line_par) == 'lwd')){
+      line_size <- line_par$lwd
+    }else{
+      line_size <- 0.5
+    }
+    if(any(names(line_par) == 'col')){
+      line_colour <- line_par$col
+    }else{
+      line_colour <- 'black'
+    }
+    
+    to_plot <- ggplot()+
+      geom_abline(slope=slope, intercept=intercept, size = line_size, colour = line_colour)+
+      geom_point(data=data.frame(x=pts_xs,y=pts_ys),mapping=aes(x=x,y=y),
+                 fill = point_fill, colour = point_colour, size = point_size)+
+      scale_y_continuous(breaks=y_ats, minor_breaks = y_mini_ats, labels = y_lbs)+
+      scale_x_continuous(breaks=x_ats, minor_breaks = x_mini_ats, labels = x_lbs)
+    to_add <- character(0)
+    par_list <- list(...)
+    if(any(names(par_list) == 'xlab')){
+      to_add <- c(to_add,paste0('xlab("',par_list$xlab,'")'))
+    }
+    if(any(names(par_list) == 'ylab')){
+      to_add <- c(to_add,paste0('ylab("',par_list$ylab,'")'))
+    }
+    if(length(par_list)>0){
+      eval(parse(text = paste0('to_plot <- to_plot + ',paste0(to_add,collapse=" + "))))
+    }
+    bnds <- get_plot_bounds(x,alpha)
+    to_plot <- to_plot+geom_line(data=data.frame(x=bnds[[1]],y=bnds[[2]]),mapping=aes(x=x,y=y),linetype=2)+
+      geom_line(data=data.frame(x=bnds[[1]],y=bnds[[3]]),mapping=aes(x=x,y=y),linetype=2)
+    print(to_plot)
+  }
   if(theme == 'weibull++'){
     par(las = 1, xaxs = 'i', yaxs = 'i', tcl = 0, mar = c(1.6, 2.2, 1.6, 2.1), cex.axis = 0.5, 
         mgp = c(0.75,0,0), col.axis = 'blue', col.lab = 'red', col.main = 'red', cex.main = 1)
@@ -284,20 +280,24 @@ plot_lognormal <- function(x, theme, alpha, line_par, point_par, ...){
     title(xlab='Time', line = 0.5)
     title(main='Probability - Lognormal', line =0.5)
     abline(v = x_mini_ats, col = 'green',lwd= 0.5)
-#     abline(h = y_mini_ats, col = 'green',lwd= 0.5)
+    abline(h = y_mini_ats, col = 'green',lwd= 0.5)
     abline(v = x_ats, col = 'red', lwd = 0.5)
     abline(h = y_ats, col = 'red', lwd = 0.5)
     abline(intercept, slope, col='blue')
-#     bound_xs <- seq(from=par()$usr[1], to=par()$usr[2], length.out = 5E2)
-#     calc_res <- lapply(X = bound_xs, FUN = function(z){calculate(x,'reliability',z,alpha=alpha)})
-#     uppers <- sapply(X = calc_res, FUN = function(z){log(z$upper_limit)})
-#     lowers <- sapply(X = calc_res, FUN = function(z){log(z$lower_limit)})
-#     lines(x=bound_xs, y=uppers, col='red')
-#     lines(x=bound_xs, y=lowers, col='red')
-    # points(pts_xs, pts_ys, pch = 16, col = 'blue', xpd = T)
+    bnds <- get_plot_bounds(x,alpha)
+    lines(x=bnds[[1]], y=bnds[[2]], col='red')
+    lines(x=bnds[[1]], y=bnds[[3]], col='red')
+    points(pts_xs, pts_ys, pch = 16, col = 'blue', xpd = T)
     par(las = 0, xaxs = 'r', yaxs = 'r', tcl = -0.5, mar = c(5.1, 4.1, 4.1, 2.1), cex.axis = 1, 
         mgp = c(3,1,0), col.axis = 'black', col.lab = 'black', col.main='black', cex.main = 1.2)
   }
 }
 
+get_plot_bounds <- function(x,alpha){
+  bound_xs <- exp(seq(from=par()$usr[1], to=par()$usr[2], length.out = 5E2))
+  calc_res <- lapply(X = bound_xs, FUN = function(z){calculate(x,'failure',z,alpha=alpha)})
+  uppers <- sapply(X = calc_res, FUN = function(z){qnorm(z$upper_limit)})
+  lowers <- sapply(X = calc_res, FUN = function(z){qnorm(z$lower_limit)})
+  return(list(log(bound_xs),uppers,lowers))
+}
 
