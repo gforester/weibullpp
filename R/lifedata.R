@@ -840,10 +840,10 @@ ggplot_theme_line <- function(xs,ys,us=NA,ls=NA,...){
 #' @seealso 
 #' \code{\link{hist_lifedata}}
 #' 
-hist.fitted_life_data <- function(x, type = 'failure', theme = 'base_r'){
+hist.fitted_life_data <- function(x, type = 'failure', theme = 'base_r', ...){
   times <- x$data$time
   status <- x$data$status
-  hist_lifedata(times, status, type, theme) 
+  hist_lifedata(times, status, type, theme, ...) 
 }
 #' @title Histogram lifedata Objects
 #' 
@@ -859,10 +859,10 @@ hist.fitted_life_data <- function(x, type = 'failure', theme = 'base_r'){
 #' @seealso 
 #' \code{\link{hist_lifedata}}
 #' 
-hist.lifedata <- function(x, type = 'failure', theme = 'base_r'){
+hist.lifedata <- function(x, type = 'failure', theme = 'base_r', ...){
   times <- x$time
   status <- x$status
-  hist_lifedata(times, status, type, theme)
+  hist_lifedata(times, status, type, theme, ...)
 }
 #' @title Histogram for Life Data Analysis
 #' 
@@ -885,7 +885,7 @@ hist.lifedata <- function(x, type = 'failure', theme = 'base_r'){
 #' @seealso 
 #' \code{\link{hist}} \code{\link{plot.fitted_life_data}}
 #' 
-hist_lifedata <- function(x, status, type, theme){
+hist_lifedata <- function(x, status, type, theme, ... ){
   if(!(type %in% c('failure','suspension'))){
     stop('type must be either failure or suspension')
   }else{
@@ -901,7 +901,7 @@ hist_lifedata <- function(x, status, type, theme){
     theme <- 'base_r'
   }
   if(theme == 'base_r'){
-    hist(times)  
+    hist(times, ...)  
   }
 }
 
