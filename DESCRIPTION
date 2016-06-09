@@ -5,7 +5,7 @@ Title: weibullpp
 Authors@R: c(person("Richard", "Leu", role = c("aut", "cre"), email = "rhleu@utexas.edu"))
 Author: Richard [aut, cre]
 Maintainer: Richard Leu <rhleu@utexas.edu>
-Depends:
+Depends: 
     R (>= 3.1.0),
     survival
 Description: reliability engineering statistical analysis
@@ -13,3 +13,4 @@ License: GPL-3 | file LICENCE
 URL: https://github.com/lxy009/weibullpp
 BugReports: https://github.com/lxy009/weibullpp/issues
 RoxygenNote: 5.0.1
+Suggests: testthat

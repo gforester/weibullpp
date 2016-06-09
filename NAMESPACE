@@ -13,5 +13,5 @@ export(
   
 )
 export(recurrentdata, plot.recurrentdata, mle_recurrent)
-
+export(dist_class, log_like_generic, mle_generic)
 
