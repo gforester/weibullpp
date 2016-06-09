@@ -11,6 +11,9 @@ lognormal_ld_like_complete <- function(theta, lifedata_object){
   return(full_like)
 }
 
+
+
+
 # for data with censored points -----------------------
 #brute-force R method for log-likelihood - use for censored data
 lognormal_ld_like <- function(theta, lifedata_object){
