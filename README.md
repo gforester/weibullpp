@@ -7,10 +7,10 @@ See [CRAN Task View: Survival Analysis](https://cran.r-project.org/web/views/Sur
 Another goal is to offer an open-source alternative to commercial software such as Reliasoft's Weibull++.
 To this end, many plots and calculations available in Weibull++ will be made available in the package.
 
-As of version 0.3, the package is restricted to the following
+As of version 0.4.0, the package is restricted to the following
 * life data analysis 
 * right censoring
-* weibull and exponential distribution
+* distributions: exponential, Weibull, lognormal
 * standard errors estimated by Fisher Information method
 
 ## Life Data Analysis
@@ -22,17 +22,24 @@ Example:
 ```R
 x = lifedata(c(90.7, 114.8, 12.0, 144.35, 199.8), c(0,1,1,1,0), 'hours')
 ```
-To fit data to a distribution, use `lifedata()`. 
-The result is a `fitted_life_data` object.
-This object constains the original data, the distribution fitted, the fitted values, the log-likelihood, standard errors, and goodness-of-fit values, if possible.
-The default method is MLE for parameter estimates.
+
+To fit data to a distribution, use `fit_data()`. 
+`fit_data()` has 4 input arguments: `lifedata` object, `dist` indication distribution, `method` indicating fitting method, and `rank_method` indicating rank method.
+The default fitting method is MLE for parameter estimates.
+The default ranking method is median ranks.
+Ranks are utilized for rank regression fitting, not MLE.
 Standard errors estimated from Fisher matrix.
-Note: you may see warnings outputted by the optimization routine when fitting Weibulls.
+
+The result is a `fitted_life_data` object.
+This object constains the original data, rank calculations, the distribution fitted, the fitted values, the log-likelihood, standard errors, and goodness-of-fit values, if possible.
+
+Note: you may see warnings outputted by the optimization routine when using MLE.
 Examples:
 ```R
-y =  fit_data(x) #fit weibull distribution by default
-y_exp=fit_data(x, dist = 'exponential') #fit exponential distribution
-y =  fit_data(x, method = 'rry') #fit weibull distribution using rank regression on y instead of MLE
+y = fit_data(x) #fit weibull distribution by default
+y = fit_data(x, dist = 'exponential') #fit exponential distribution
+y = fit_data(x, method = 'rry') #fit weibull distribution using rank regression on y instead of MLE
+y = fit_data(x, dist = 'lognormal', method = 'rry', rank_method = 'kaplan-meier') #fit weibull distribution using rank regression on y instead of MLE
 ```
 The package provides several plot types of the fitted distribution.
 These include: probability on linearized scales, CDF (unreliability), reliability, PDF, and failure rate (hazard function).
@@ -49,10 +56,14 @@ plot(y) #default to linearized scale plot
 plot(y, type = 'failure') #probability of failure over time
 plot(y, type = 'reliability') #reliability over time
 plot(y, type = 'pdf') #pdf of fitted distribution
+plot(y, type = 'failure rate') #aka hazard function of fitted distribution
 ```
-For styling purposes, an optional `theme` input can accept values of either `'base_r'` or `'weibull++`.
-The latter produces a plot that looks similar to those produced by Weibull++.
+For styling purposes, an optional `theme` input can accept certain values: `'base_r'`, `'ggplot'`, or  `'weibull++`.
+You must load the ggplot library first in order to use the `'ggplot'` theme.
+The last option produces a plot that looks similar to those produced by Weibull++.
 ```R
+library(ggplot2)
+plot(y, theme = 'ggplot') #linearized scale plot utilizing ggplot
 plot(y, theme = 'weibull++') #linearized scale plot with Weibull++ styling
 ```
 Graphical parameters can be passed when theme = ``base_r``.
@@ -64,7 +75,6 @@ plot(y, line_par = list(lwd = 2, col = 'red'), point_par = list(pch = 16, col = 
 
 Histograms, pie charts, and timeline charts are also available.
 These functions can take either `lifedata` objects or `fitted_life_data` objects.
-NOTE: histogram functionality is in its early infancy and does not respect them input nor allow graphical parameters to be passed
 Examples:
 ```R
 hist(y, type = 'failure') #histogram of failure points, input is fitted_life_data_object
