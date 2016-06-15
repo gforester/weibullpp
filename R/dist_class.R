@@ -5,11 +5,14 @@
 #  d,p,r,g - functions: should be the typical d,p,q,r calculation structure except parameter inputs as one vector
 #  g - function to determine guess for mle based on lifedata object input
 #  lins - list of 2: function to linearize y given ranks and function to linearize x given times
-dist_class <- function(th,d,p,q,r,g,lins=NA){
+dist_class <- function(th,d,p,q,r,g,rrs = NA, lins=NA){
   if(is.na(lins)){
     lins = list('use'='no')
   }
-  return(structure(list(thetas = th, d=d,p=p,q=q,r=r,guess = g, lins = lins), class="dist_class"))
+  if(is.na(rrs)){
+    rrs = list('use' = 'no')
+  }
+  return(structure(list(thetas = th, d=d,p=p,q=q,r=r,guess = g, rrs = rrs, lins = lins), class="dist_class"))
 }
 
 #x is lifedata object
@@ -56,6 +59,7 @@ mle_generic <- function(x,y){
 }
 
 rr_generic <- function(x,y, method = 'median_ranks'){
+  
   #get x,y for linearized plot
   ranks <- estimate_ranks(x,method)
   lin_ys <- y$lins[[2]](ranks)
@@ -67,6 +71,8 @@ rr_generic <- function(x,y, method = 'median_ranks'){
   lin_xs <- lin_xs[to_keep]
   
   #correlation, sds, and means
+  #rry -> error in y -> y = a_y + b_y*x
+  #rrx -> error in x -> x = a_x + b_x*y
   rho <- cor(xs,ys)
   sdx <- sd(xs)
   sdy <- sd(ys)
@@ -75,10 +81,43 @@ rr_generic <- function(x,y, method = 'median_ranks'){
   a_y <- mean(ys)-b_y*mean(xs)
   a_x <- mean(xs)-b_x*mean(ys)
   
-  #connect to parameters
+  return(list(rho=rho, sdx=sdx, sdy=sdy, b_y=b_y, b_x=b_x, a_y=a_y, a_x=a_x))
 }
 
 #y is a dist_class object
-test_fit_data <- function(x, dist = y, method = 'mle', rank_method = 'median_ranks'){
+test_fit_data <- function(x, dist = 'weibull', method = 'mle', rank_method = 'median_ranks', 
+                          dist_classes = default_dist_list){
+  
+  #extract dist_class object corresponding to dist input
+  #fail if can't find distribution
+  if( ! ( dist %in% names(dist_classes) ) ){
+    stop('dist is not a known distribution')
+  }else{
+    dist_to_use <- dist_classes[[dist]]
+  }
+  
+  #if method is rank regression, check to see if rank regression defined for distribution
+  #else default to mle
+  if(method %in% c('rrx','rry')){
+    if(dist_to_use$rrs$use == 'no'){
+      warning('rank regression not defined for distribution. using MLEs')
+      method <- 'mle'
+    }else{
+      tmp1 <- rr_generic(x = x, y = dist_to_use, method = rank_method)
+      tmp2 <- y$rrs$map_to_params(tmp1)
+      fit_res <- tmp2[[method]]
+    }
+  }
+  
+  #mle
+  if(method == 'mle'){
+    fit_res <- mle_generic(x = x, y = dist_to_use)
+  }
+  
+  
+  #ses
+  
+  
+  #gofs
   
 }
